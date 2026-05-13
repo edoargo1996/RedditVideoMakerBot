@@ -151,7 +151,7 @@ class FakeSubreddit:
 
 
 class FakeSearchResults:
-    """Search results across all of Reddit via PullPush API (no auth needed)."""
+    """Search results across all of Reddit via the public JSON API (live, no auth)."""
 
     def __init__(self, query: str, sort: str = "hot", time_filter: str = "all", limit: int = 25):
         self.query = query
@@ -159,74 +159,30 @@ class FakeSearchResults:
         self.time_filter = time_filter
         self.limit = limit
 
-    def _params(self) -> dict:
-        # PullPush sorting: score, num_comments, created_utc
-        if self.sort == "new":
-            sort_type, sort_dir = "created_utc", "desc"
-        elif self.sort == "top":
-            sort_type, sort_dir = "score", "desc"
-        elif self.sort == "comments":
-            sort_type, sort_dir = "num_comments", "desc"
-        else:
-            # hot, relevance -> fallback to score desc
-            sort_type, sort_dir = "score", "desc"
-
+    def __iter__(self):
+        url = f"{REDDIT_BASE}/search.json"
         params = {
             "q": self.query,
-            "size": self.limit,
-            "sort": sort_dir,
-            "sort_type": sort_type,
+            "sort": self.sort,
+            "t": self.time_filter,
+            "limit": self.limit,
         }
-
-        now = int(time.time())
-        self._after_ts = None
-        if self.time_filter == "hour":
-            self._after_ts = now - 3600
-        elif self.time_filter == "day":
-            self._after_ts = now - 86400
-        elif self.time_filter == "week":
-            self._after_ts = now - 604800
-        elif self.time_filter == "month":
-            self._after_ts = now - 2592000
-        elif self.time_filter == "year":
-            self._after_ts = now - 31536000
-
-        return params
-
-    def __iter__(self):
-        url = "https://api.pullpush.io/reddit/search/submission/"
-        headers = {
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/124.0.0.0 Safari/537.36"
-            ),
-        }
-        params = self._params()
-        resp = requests.get(url, params=params, headers=headers, timeout=30)
+        session = _get_session()
+        resp = session.get(url, params=params, timeout=30)
         try:
             resp.raise_for_status()
             payload = resp.json()
         except Exception as exc:
-            raise RuntimeError(f"PullPush search failed: {exc}") from exc
+            raise RuntimeError(f"Reddit search failed: {exc}") from exc
 
-        posts = payload.get("data", [])
-
-        # Client-side time filtering — PullPush "after" param is unreliable
-        if self._after_ts:
-            filtered = [p for p in posts if p.get("created_utc", 0) >= self._after_ts]
-            if filtered:
-                posts = filtered
-            else:
-                # No results in the time window; return unfiltered so user gets *something*
-                # and can see they're stale. We'll log this via the caller.
-                pass
-
-        for post in posts:
-            # PullPush returns raw API fields; author is a string
-            if isinstance(post.get("author"), str):
-                post["author"] = post["author"]
-            yield FakeSubmission(post)
+        posts = payload.get("data", {}).get("children", [])
+        for child in posts:
+            if child.get("kind") == "t3":
+                data = child["data"]
+                # Reddit JSON API returns author as string; adapt to dict format
+                if isinstance(data.get("author"), str):
+                    data["author"] = data["author"]
+                yield FakeSubmission(data)
 
 
 class FakeReddit:

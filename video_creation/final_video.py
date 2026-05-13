@@ -134,6 +134,8 @@ def create_fancy_thumbnail(image, text, text_color, padding, wrap=35):
     # This is -50 to reduce the empty space at the bottom of the image,
     # change it as per your requirement if needed otherwise leave it.
     new_image_height = image_height + text_height + padding * (len(lines) - 1) - 50
+    # Ensure we never shrink the image below original height (prevents negative middle height)
+    new_image_height = max(new_image_height, image_height)
 
     # Separate the image into top, middle (1px), and bottom parts
     top_part_height = image_height // 2
@@ -146,6 +148,7 @@ def create_fancy_thumbnail(image, text, text_color, padding, wrap=35):
 
     # Stretch the middle part
     new_middle_height = new_image_height - top_part_height - bottom_part_height
+    new_middle_height = max(1, new_middle_height)
     middle_part = middle_part.resize((image_width, new_middle_height))
 
     # Create new image with the calculated height
