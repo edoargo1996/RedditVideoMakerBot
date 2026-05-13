@@ -96,6 +96,14 @@ def download_background_video(background_config):
     target = Path(f"assets/backgrounds/video/{credit}-{filename}")
     if target.is_file():
         return
+
+    use_local_only = settings.config.get("settings", {}).get("background", {}).get("use_local_only", False)
+    if use_local_only:
+        print_substep("use_local_only is enabled. Skipping download, generating fallback...", style="bold yellow")
+        _generate_fallback_video(target, credit)
+        print_substep("Fallback video generated! 🎉", style="bold green")
+        return
+
     print_step(
         "We need to download the backgrounds videos. they are fairly large but it's only done once. 😎"
     )
@@ -194,6 +202,14 @@ def download_background_audio(background_config):
     target = Path(f"assets/backgrounds/audio/{credit}-{filename}")
     if target.is_file():
         return
+
+    use_local_only = settings.config.get("settings", {}).get("background", {}).get("use_local_only", False)
+    if use_local_only:
+        print_substep("use_local_only is enabled. Skipping download, generating fallback audio...", style="bold yellow")
+        _generate_fallback_audio(target)
+        print_substep("Fallback audio generated! 🎉", style="bold green")
+        return
+
     print_step(
         "We need to download the backgrounds audio. they are fairly large but it's only done once. 😎"
     )
@@ -278,23 +294,34 @@ def chop_background(background_config: Dict[str, Tuple], video_length: int, redd
     print_step("Finding a spot in the backgrounds video to chop...✂️")
     video_choice = f"{background_config['video'][2]}-{background_config['video'][1]}"
     background_video = VideoFileClip(f"assets/backgrounds/video/{video_choice}")
-    start_time_video, end_time_video = get_start_and_end_times(
-        video_length, background_video.duration
-    )
-    # Extract video subclip
-    try:
-        with VideoFileClip(f"assets/backgrounds/video/{video_choice}") as video:
-            new = video.subclipped(start_time_video, end_time_video)
-            new.write_videofile(f"assets/temp/{thread_id}/background.mp4")
-
-    except (OSError, IOError):  # ffmpeg issue see #348
-        print_substep("FFMPEG issue. Trying again...")
-        ffmpeg_extract_subclip(
-            f"assets/backgrounds/video/{video_choice}",
-            start_time_video,
-            end_time_video,
-            outputfile=f"assets/temp/{thread_id}/background.mp4",
+    if background_video.duration < video_length:
+        print_substep(
+            f"Background ({background_video.duration:.1f}s) is shorter than video ({video_length}s). Looping background...",
+            style="bold yellow",
         )
+        from moviepy import concatenate_videoclips
+        loops_needed = int(video_length / background_video.duration) + 1
+        looped = concatenate_videoclips([background_video] * loops_needed)
+        new = looped.subclipped(0, video_length)
+        new.write_videofile(f"assets/temp/{thread_id}/background.mp4")
+    else:
+        start_time_video, end_time_video = get_start_and_end_times(
+            video_length, background_video.duration
+        )
+        # Extract video subclip
+        try:
+            with VideoFileClip(f"assets/backgrounds/video/{video_choice}") as video:
+                new = video.subclipped(start_time_video, end_time_video)
+                new.write_videofile(f"assets/temp/{thread_id}/background.mp4")
+
+        except (OSError, IOError):  # ffmpeg issue see #348
+            print_substep("FFMPEG issue. Trying again...")
+            ffmpeg_extract_subclip(
+                f"assets/backgrounds/video/{video_choice}",
+                start_time_video,
+                end_time_video,
+                outputfile=f"assets/temp/{thread_id}/background.mp4",
+            )
     print_substep("Background video chopped successfully!", style="bold green")
     return background_config["video"][2]
 

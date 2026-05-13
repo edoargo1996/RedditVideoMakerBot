@@ -100,6 +100,11 @@ def get_subreddit_threads(POST_ID: str):
     # Re-fetch the full post with comments since hot/top listings don't include them
     submission = reddit.submission(id=submission.id)
 
+    # Double-check after re-fetch — Reddit may mark it as removed even if PullPush had the old title
+    if "removed by moderator" in (submission.title or "").lower():
+        print_substep("Post was removed by moderator (detected after re-fetch). Skipping...")
+        return get_subreddit_threads(POST_ID)
+
     upvotes = submission.score
     ratio = submission.upvote_ratio * 100
     num_comments = submission.num_comments

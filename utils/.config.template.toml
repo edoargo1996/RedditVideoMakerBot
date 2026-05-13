@@ -48,6 +48,7 @@ background_thumbnail = { optional = true, type = "bool", default = false, exampl
 background_thumbnail_font_family = { optional = true, default = "arial", example = "arial", explanation = "Font family for the thumbnail text" }
 background_thumbnail_font_size = { optional = true, type = "int", default = 96, example = 96, explanation = "Font size in pixels for the thumbnail text" }
 background_thumbnail_font_color = { optional = true, default = "255,255,255", example = "255,255,255", explanation = "Font color in RGB format for the thumbnail text" }
+use_local_only = { optional = true, type = "bool", default = false, example = false, options = [true, false,], explanation = "If true, only use locally downloaded backgrounds. Never download new ones from YouTube/Pexels. Falls back to procedural generation if missing." }
 
 [settings.tts]
 voice_choice = { optional = false, default = "tiktok", options = ["elevenlabs", "streamlabspolly", "tiktok", "googletranslate", "awspolly", "pyttsx", "OpenAI"], example = "tiktok", explanation = "The voice platform used for TTS generation. " }

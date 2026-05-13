@@ -252,6 +252,9 @@ pre.log .info { color: #64b5f6; }
         </select>
       </div>
     </div>
+    <div class="radio-group" style="margin-top:10px">
+      <label><input type="checkbox" id="use_local_only"> 📦 Use only local backgrounds <span class="hint">— never download from YouTube/Pexels (fallback to procedural if missing)</span></label>
+    </div>
     <label for="voice">Voice <span class="hint">— text-to-speech engine</span></label>
     <select id="voice">
       <option value="googletranslate" selected>Google Translate (free, no key)</option>
@@ -531,6 +534,7 @@ async function startGeneration() {
     audio: document.getElementById('audio').value,
     voice: document.getElementById('voice').value,
     storymode: document.getElementById('storymode').checked,
+    use_local_only: document.getElementById('use_local_only').checked,
     chosen_thread_id: chosenThreadId,
   };
 

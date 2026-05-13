@@ -226,6 +226,7 @@ def generate():
 
     cfg["settings"]["background"]["background_video"] = data.get("video", "minecraft")
     cfg["settings"]["background"]["background_audio"] = data.get("audio", "lofi")
+    cfg["settings"]["background"]["use_local_only"] = data.get("use_local_only", False)
     cfg["settings"]["tts"]["voice_choice"] = data.get("voice", "googletranslate")
     cfg["settings"]["storymode"] = data.get("storymode", False)
     cfg["settings"]["times_to_run"] = 1
