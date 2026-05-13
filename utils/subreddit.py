@@ -52,6 +52,9 @@ def get_subreddit_undone(submissions: list, subreddit, times_checked=0, similari
         if submission.stickied:
             print_substep("This post was pinned by moderators. Skipping...")
             continue
+        if "[removed by moderator" in (submission.title or "").lower():
+            print_substep("Post was removed by moderator. Skipping...")
+            continue
         if _contains_blocked_words(submission.title + " " + (submission.selftext or "")):
             print_substep("Post contains a blocked word. Skipping...")
             continue

@@ -47,11 +47,22 @@ def get_start_and_end_times(video_length: int, length_of_clip: int) -> Tuple[int
     Returns:
         tuple[int,int]: Start and end time of the randomized interval
     """
+    if int(length_of_clip) <= int(video_length):
+        print_substep(
+            f"Background ({length_of_clip}s) is shorter than video ({video_length}s). Using whole background.",
+            style="bold yellow",
+        )
+        return 0, int(length_of_clip)
+
     initialValue = 180
     # Issue #1649 - Ensures that will be a valid interval in the video
     while int(length_of_clip) <= int(video_length + initialValue):
         if initialValue == initialValue // 2:
-            raise Exception("Your background is too short for this video length")
+            print_substep(
+                f"Background ({length_of_clip}s) is shorter than video ({video_length}s). Using whole background.",
+                style="bold yellow",
+            )
+            return 0, int(length_of_clip)
         else:
             initialValue //= 2  # Divides the initial value by 2 until reach 0
     random_time = randrange(initialValue, int(length_of_clip) - int(video_length))
@@ -136,22 +147,40 @@ def download_background_video(background_config):
 
 
 def _generate_fallback_video(target: Path, label: str):
-    """Generate a 3-minute animated fallback video with ffmpeg (Game of Life)."""
+    """Generate a 10-minute animated fallback video with ffmpeg (Game of Life looped)."""
     from subprocess import run, DEVNULL
+    from tempfile import TemporaryDirectory
     label_safe = label.replace("'", "")
-    cmd = [
-        "ffmpeg", "-y",
-        "-f", "lavfi",
-        "-i", "life=s=1080x1920:r=30:mold=10:ratio=0.3:life_color=0x00e5ff:death_color=0x0f1115",
-        "-t", "180",
-        "-vf", f"drawtext=text='{label_safe}':fontsize=80:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2:box=1:boxcolor=black@0.5,format=yuv420p",
-        "-c:v", "libx264",
-        "-preset", "fast",
-        "-pix_fmt", "yuv420p",
-        "-movflags", "+faststart",
-        str(target),
-    ]
-    run(cmd, stdout=DEVNULL, stderr=DEVNULL, check=True)
+
+    with TemporaryDirectory() as tmpdir:
+        short = Path(tmpdir) / "short.mp4"
+        # 1) Generate a short 60-second clip (fast, low bitrate)
+        cmd = [
+            "ffmpeg", "-y",
+            "-f", "lavfi",
+            "-i", "life=s=1080x1920:r=30:mold=10:ratio=0.3:life_color=0x00e5ff:death_color=0x0f1115",
+            "-t", "60",
+            "-vf", f"drawtext=text='{label_safe}':fontsize=80:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2:box=1:boxcolor=black@0.5,format=yuv420p",
+            "-c:v", "libx264",
+            "-preset", "ultrafast",
+            "-crf", "32",
+            "-maxrate", "2M",
+            "-bufsize", "4M",
+            "-pix_fmt", "yuv420p",
+            str(short),
+        ]
+        run(cmd, stdout=DEVNULL, stderr=DEVNULL, check=True)
+
+        # 2) Loop the short clip to 10 minutes instantly with stream_loop + copy
+        cmd2 = [
+            "ffmpeg", "-y",
+            "-stream_loop", "9",
+            "-i", str(short),
+            "-t", "600",
+            "-c", "copy",
+            str(target),
+        ]
+        run(cmd2, stdout=DEVNULL, stderr=DEVNULL, check=True)
 
 
 def download_background_audio(background_config):
