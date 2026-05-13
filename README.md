@@ -2,6 +2,10 @@
 
 Fork di [RedditVideoMakerBot](https://github.com/elebumm/RedditVideoMakerBot) con **Web UI**, **downloader automatico** di background (video + audio) e **nessuna API Reddit necessaria**.
 
+<p align="center">
+  <img src="docs/screenshot.png" alt="Web UI Screenshot" width="900">
+</p>
+
 ## Cosa c'è di diverso in questo fork
 
 - ✅ **Web UI** — genera video dal browser invece che da terminale interattivo
