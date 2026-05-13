@@ -11,6 +11,7 @@ from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 
 from utils import settings
 from utils.console import print_step, print_substep
+from utils import background_search as bg_search
 
 
 def load_background_options():
@@ -73,11 +74,14 @@ def get_background_config(mode: str):
     return background_options[mode][choice]
 
 
-def download_background_video(background_config: Tuple[str, str, str, Any]):
-    """Downloads the background/s video from YouTube."""
+def download_background_video(background_config):
+    """Downloads the background/s video from YouTube or searches automatically."""
     Path("./assets/backgrounds/video/").mkdir(parents=True, exist_ok=True)
-    # note: make sure the file name doesn't include an - in it
-    uri, filename, credit, _ = background_config
+    # background_config: [uri, filename, credit, position, search_query?]
+    uri = background_config[0]
+    filename = background_config[1]
+    credit = background_config[2]
+    search_query = background_config[4] if len(background_config) > 4 else None
     target = Path(f"assets/backgrounds/video/{credit}-{filename}")
     if target.is_file():
         return
@@ -85,31 +89,60 @@ def download_background_video(background_config: Tuple[str, str, str, Any]):
         "We need to download the backgrounds videos. they are fairly large but it's only done once. 😎"
     )
     print_substep("Downloading the backgrounds videos... please be patient 🙏 ")
-    print_substep(f"Downloading {filename} from {uri}")
-    ydl_opts = {
-        "format": "bestvideo[height<=1080][ext=mp4]",
-        "outtmpl": str(target),
-        "retries": 10,
-    }
 
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download(uri)
-        print_substep("Background video downloaded successfully! 🎉", style="bold green")
-    except Exception as exc:
-        print_substep(f"YouTube download failed ({exc}). Generating local fallback video...", style="bold yellow")
-        _generate_fallback_video(target, credit)
-        print_substep("Fallback video generated! 🎉", style="bold green")
+    # 1) Try direct URL if present
+    if uri:
+        print_substep(f"Downloading {filename} from {uri}")
+        ydl_opts = {
+            "format": "bestvideo[height<=1080][ext=mp4]/best[ext=mp4]/best",
+            "outtmpl": str(target),
+            "retries": 10,
+        }
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download(uri)
+            print_substep("Background video downloaded successfully! 🎉", style="bold green")
+            return
+        except Exception as exc:
+            print_substep(f"Direct YouTube download failed ({exc}).", style="bold yellow")
+
+    # 2) Try automatic YouTube search
+    if search_query:
+        print_substep(f"Searching YouTube for: {search_query}")
+        try:
+            if bg_search.search_and_download_video(search_query, target):
+                print_substep("Background video downloaded via search! 🎉", style="bold green")
+                return
+        except Exception as exc:
+            print_substep(f"Auto-search failed ({exc}).", style="bold yellow")
+
+    # 3) Try Pexels if API key is configured
+    pexels_key = settings.config.get("settings", {}).get("pexels_api_key", "")
+    if pexels_key and search_query:
+        print_substep(f"Searching Pexels for: {search_query}")
+        try:
+            urls = bg_search.search_pexels_video(search_query, pexels_key)
+            for url in urls:
+                if bg_search.download_direct_video(url, target):
+                    print_substep("Background video downloaded from Pexels! 🎉", style="bold green")
+                    return
+        except Exception as exc:
+            print_substep(f"Pexels search failed ({exc}).", style="bold yellow")
+
+    # 4) Fallback local generation
+    print_substep("Generating local fallback video...", style="bold yellow")
+    _generate_fallback_video(target, credit)
+    print_substep("Fallback video generated! 🎉", style="bold green")
 
 
 def _generate_fallback_video(target: Path, label: str):
-    """Generate a 3-minute animated fallback video with ffmpeg (cellular automaton)."""
+    """Generate a 3-minute animated fallback video with ffmpeg (Game of Life)."""
     from subprocess import run, DEVNULL
     label_safe = label.replace("'", "")
     cmd = [
         "ffmpeg", "-y",
         "-f", "lavfi",
-        "-i", "cellauto=s=1080x1920:r=30:rule=110",
+        "-i", "life=s=1080x1920:r=30:mold=10:ratio=0.3:life_color=0x00e5ff:death_color=0x0f1115",
         "-t", "180",
         "-vf", f"drawtext=text='{label_safe}':fontsize=80:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2:box=1:boxcolor=black@0.5,format=yuv420p",
         "-c:v", "libx264",
@@ -121,11 +154,14 @@ def _generate_fallback_video(target: Path, label: str):
     run(cmd, stdout=DEVNULL, stderr=DEVNULL, check=True)
 
 
-def download_background_audio(background_config: Tuple[str, str, str]):
-    """Downloads the background/s audio from YouTube."""
+def download_background_audio(background_config):
+    """Downloads the background/s audio from YouTube or searches automatically."""
     Path("./assets/backgrounds/audio/").mkdir(parents=True, exist_ok=True)
-    # note: make sure the file name doesn't include an - in it
-    uri, filename, credit = background_config
+    # background_config: [uri, filename, credit, search_query?]
+    uri = background_config[0]
+    filename = background_config[1]
+    credit = background_config[2]
+    search_query = background_config[3] if len(background_config) > 3 else None
     target = Path(f"assets/backgrounds/audio/{credit}-{filename}")
     if target.is_file():
         return
@@ -133,21 +169,44 @@ def download_background_audio(background_config: Tuple[str, str, str]):
         "We need to download the backgrounds audio. they are fairly large but it's only done once. 😎"
     )
     print_substep("Downloading the backgrounds audio... please be patient 🙏 ")
-    print_substep(f"Downloading {filename} from {uri}")
-    ydl_opts = {
-        "outtmpl": str(target),
-        "format": "bestaudio/best",
-        "extract_audio": True,
-    }
 
+    # 1) Try direct URL if present
+    if uri:
+        print_substep(f"Downloading {filename} from {uri}")
+        ydl_opts = {
+            "outtmpl": str(target),
+            "format": "bestaudio/best",
+            "extract_audio": True,
+            "audio_format": "mp3",
+            "retries": 10,
+        }
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([uri])
+            print_substep("Background audio downloaded successfully! 🎉", style="bold green")
+            return
+        except Exception as exc:
+            print_substep(f"Direct YouTube download failed ({exc}).", style="bold yellow")
+
+    # 2) Try automatic YouTube search
+    if search_query:
+        print_substep(f"Searching YouTube for: {search_query}")
+        try:
+            if bg_search.search_and_download_audio(search_query, target):
+                print_substep("Background audio downloaded via search! 🎉", style="bold green")
+                return
+        except Exception as exc:
+            print_substep(f"Auto-search failed ({exc}).", style="bold yellow")
+
+    # 3) Fallback procedural lofi generation
+    print_substep("Generating procedural lofi music as fallback...", style="bold yellow")
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([uri])
-        print_substep("Background audio downloaded successfully! 🎉", style="bold green")
+        bg_search.generate_lofi_music(target, duration=600)
+        print_substep("Procedural lofi generated! 🎉", style="bold green")
     except Exception as exc:
-        print_substep(f"YouTube download failed ({exc}). Generating silent fallback audio...", style="bold yellow")
+        print_substep(f"Procedural generation failed ({exc}). Using silent fallback...", style="bold yellow")
         _generate_fallback_audio(target)
-        print_substep("Fallback audio generated! 🎉", style="bold green")
+        print_substep("Silent fallback audio generated! 🎉", style="bold green")
 
 
 def _generate_fallback_audio(target: Path):

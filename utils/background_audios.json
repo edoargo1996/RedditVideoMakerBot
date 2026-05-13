@@ -3,31 +3,55 @@
     "lofi": [
         "https://www.youtube.com/watch?v=5qap5aO4i9A",
         "lofi.mp3",
-        "Lofi Girl"
+        "Lofi Girl",
+        "lofi hip hop radio beats to relax"
     ],
     "lofi-2": [
         "https://www.youtube.com/watch?v=DWcJFNfaw9c",
         "lofi-2.mp3",
-        "Chill Music Lab"
+        "Chill Music Lab",
+        "chill lofi beats no copyright"
     ],
     "chill-summer": [
         "https://www.youtube.com/watch?v=lxQ8V-3FjuE",
         "chill-summer.mp3",
-        "Peyruis"
+        "Peyruis",
+        "chill summer music no copyright"
     ],
     "cinematic": [
         "https://www.youtube.com/watch?v=sF80I-TQiWw",
         "cinematic.mp3",
-        "NoCopyrightSounds"
+        "NoCopyrightSounds",
+        "cinematic background music no copyright"
     ],
     "upbeat": [
         "https://www.youtube.com/watch?v=MkNeIUgNPQ8",
         "upbeat.mp3",
-        "Brock Berrigan"
+        "Brock Berrigan",
+        "upbeat background music no copyright"
     ],
     "ambient": [
         "https://www.youtube.com/watch?v=5qap5aO4i9A",
         "ambient.mp3",
-        "Lofi Girl"
+        "Lofi Girl",
+        "ambient chill music no copyright"
+    ],
+    "rain-lofi": [
+        "",
+        "rain-lofi.mp3",
+        "Auto",
+        "rain lofi beats no copyright"
+    ],
+    "jazz-lofi": [
+        "",
+        "jazz-lofi.mp3",
+        "Auto",
+        "jazz lofi hip hop no copyright"
+    ],
+    "synthwave": [
+        "",
+        "synthwave.mp3",
+        "Auto",
+        "synthwave background music no copyright"
     ]
 }

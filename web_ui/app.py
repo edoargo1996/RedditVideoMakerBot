@@ -5,6 +5,7 @@ import json
 import sys
 import threading
 import traceback
+import re
 from contextlib import redirect_stdout
 from datetime import datetime
 from io import StringIO
@@ -192,6 +193,79 @@ def generate():
 @app.route("/status")
 def status():
     return jsonify(generation)
+
+
+@app.route("/add_background", methods=["POST"])
+def add_background():
+    """Add a custom background theme (video or audio) and trigger download."""
+    data = request.get_json(force=True) or {}
+    bg_type = data.get("type", "video")  # 'video' or 'audio'
+    key = data.get("key", "").strip().lower()
+    query = data.get("query", "").strip()
+    url = data.get("url", "").strip()
+
+    if not key or not query:
+        return jsonify({"error": "Missing 'key' or 'query'"}), 400
+
+    # Sanitize key for filename
+    safe_key = re.sub(r"[^\w\-]", "", key)
+    if not safe_key:
+        return jsonify({"error": "Invalid key"}), 400
+
+    if bg_type == "video":
+        json_path = BASE_DIR / "utils" / "background_videos.json"
+        entry = [url or "", f"{safe_key}.mp4", "Custom", "center", query]
+    else:
+        json_path = BASE_DIR / "utils" / "background_audios.json"
+        entry = [url or "", f"{safe_key}.mp3", "Custom", query]
+
+    with open(json_path, "r+", encoding="utf-8") as f:
+        bg_data = json.load(f)
+        if safe_key in bg_data:
+            return jsonify({"error": f"Theme '{safe_key}' already exists"}), 409
+        bg_data[safe_key] = entry
+        f.seek(0)
+        json.dump(bg_data, f, indent=4)
+        f.truncate()
+
+    # Trigger background download in a thread so we don't block
+    def _download():
+        try:
+            from video_creation import background as bg_mod
+            if bg_type == "video":
+                bg_mod.download_background_video(entry)
+            else:
+                bg_mod.download_background_audio(entry)
+        except Exception as exc:
+            print(f"[add_background] download thread error: {exc}")
+
+    threading.Thread(target=_download, daemon=True).start()
+
+    return jsonify({"status": "added", "key": safe_key})
+
+
+@app.route("/search_background", methods=["POST"])
+def search_background():
+    """Preview YouTube search results for a query."""
+    data = request.get_json(force=True) or {}
+    query = data.get("query", "").strip()
+    bg_type = data.get("type", "video")
+    if not query:
+        return jsonify({"error": "Missing query"}), 400
+
+    from utils import background_search as bs
+    try:
+        urls = bs.search_youtube(query, max_results=5)
+        return jsonify({"results": urls})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/backgrounds")
+def list_backgrounds():
+    """Return available background themes."""
+    videos, audios = _available_backgrounds()
+    return jsonify({"videos": videos, "audios": audios})
 
 
 @app.route("/download/<path:filename>")

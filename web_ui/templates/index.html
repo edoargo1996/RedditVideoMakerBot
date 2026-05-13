@@ -148,6 +148,36 @@ pre.log {
     </div>
   </div>
 
+  <div class="card">
+    <h2>🎨 Custom backgrounds</h2>
+    <p style="color:var(--muted);font-size:.85rem;margin:0 0 12px">
+      Can't find a theme? Add your own — the bot will search YouTube and download it automatically.
+    </p>
+    <div class="row">
+      <div>
+        <label for="custom-type">Type</label>
+        <select id="custom-type">
+          <option value="video">Video (gameplay)</option>
+          <option value="audio">Audio (music)</option>
+        </select>
+      </div>
+      <div>
+        <label for="custom-key">Theme name</label>
+        <input type="text" id="custom-key" placeholder="e.g. elden-ring">
+      </div>
+    </div>
+    <label for="custom-query">YouTube search query</label>
+    <input type="text" id="custom-query" placeholder="e.g. elden ring gameplay no copyright">
+    <label for="custom-url">Direct YouTube URL (optional)</label>
+    <input type="text" id="custom-url" placeholder="https://www.youtube.com/watch?v=...">
+    <div style="margin-top:12px; display:flex; gap:10px;">
+      <button class="btn" style="padding:8px 18px; font-size:.9rem;" onclick="addCustomBackground()">➕ Add & Download</button>
+      <button class="btn" style="padding:8px 18px; font-size:.9rem; background:linear-gradient(135deg,#555,#777);" onclick="previewSearch()">🔍 Preview search</button>
+    </div>
+    <div id="custom-status" style="margin-top:10px; font-size:.85rem;"></div>
+    <div id="search-preview" style="margin-top:10px; font-size:.8rem; color:var(--muted);"></div>
+  </div>
+
   <div class="card" style="text-align:center">
     <button id="go-btn" class="btn" onclick="startGeneration()">
       <span id="btn-text">🚀 Generate Video</span>
@@ -248,7 +278,63 @@ async function startGeneration() {
   pollInterval = setInterval(checkStatus, 2500);
 }
 
+async function loadBackgrounds() {
+  const res = await fetch('/backgrounds');
+  const data = await res.json();
+  const vSel = document.getElementById('video');
+  const aSel = document.getElementById('audio');
+  vSel.innerHTML = data.videos.map(v => `<option value="${v}">${v.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</option>`).join('');
+  aSel.innerHTML = data.audios.map(a => `<option value="${a}">${a.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</option>`).join('');
+}
+
+async function addCustomBackground() {
+  const type = document.getElementById('custom-type').value;
+  const key = document.getElementById('custom-key').value.trim();
+  const query = document.getElementById('custom-query').value.trim();
+  const url = document.getElementById('custom-url').value.trim();
+  const statusEl = document.getElementById('custom-status');
+
+  if (!key || !query) {
+    statusEl.innerHTML = '<span style="color:#f44336">❌ Name and query are required.</span>';
+    return;
+  }
+
+  statusEl.innerHTML = '<span style="color:#00e5ff">⏳ Adding theme and starting download...</span>';
+  const res = await fetch('/add_background', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({type, key, query, url})
+  });
+  const data = await res.json();
+  if (res.ok) {
+    statusEl.innerHTML = '<span style="color:#4caf50">✅ Theme added! Downloading in background...</span>';
+    loadBackgrounds();
+  } else {
+    statusEl.innerHTML = `<span style="color:#f44336">❌ ${data.error || 'Failed'}</span>`;
+  }
+}
+
+async function previewSearch() {
+  const query = document.getElementById('custom-query').value.trim();
+  const type = document.getElementById('custom-type').value;
+  const box = document.getElementById('search-preview');
+  if (!query) { box.textContent = 'Enter a query first.'; return; }
+  box.textContent = 'Searching YouTube...';
+  const res = await fetch('/search_background', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({query, type})
+  });
+  const data = await res.json();
+  if (res.ok && data.results && data.results.length) {
+    box.innerHTML = '<b>Top results:</b><br>' + data.results.map((u,i) => `${i+1}. <a href="${u}" target="_blank" style="color:var(--accent2)">${u}</a>`).join('<br>');
+  } else {
+    box.textContent = 'No results found.';
+  }
+}
+
 loadVideos();
+loadBackgrounds();
 </script>
 </body>
 </html>
