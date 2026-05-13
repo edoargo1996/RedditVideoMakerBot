@@ -208,7 +208,22 @@ def generate():
     cfg = settings.config
 
     mode = data.get("mode", "search")
-    if mode == "search":
+    reddit_url = data.get("reddit_url", "").strip()
+
+    if reddit_url:
+        # Extract post ID from Reddit URL
+        m = re.search(r"/comments/([a-z0-9]+)", reddit_url, re.I)
+        if not m:
+            m = re.search(r"redd\.it/([a-z0-9]+)", reddit_url, re.I)
+        if not m:
+            m = re.search(r"reddit\.com/r/\w+/s/([a-z0-9]+)", reddit_url, re.I)
+        if m:
+            cfg["reddit"]["thread"]["post_id"] = m.group(1)
+            cfg["reddit"]["thread"]["search_query"] = ""
+            cfg["reddit"]["thread"]["subreddit"] = ""
+        else:
+            return jsonify({"error": "Could not extract post ID from Reddit URL."}), 400
+    elif mode == "search":
         cfg["reddit"]["thread"]["subreddit"] = ""
         cfg["reddit"]["thread"]["search_query"] = data.get("query", "AskReddit")
         cfg["reddit"]["thread"]["search_sort"] = data.get("sort", "hot")
@@ -219,9 +234,9 @@ def generate():
 
     # If user picked a specific thread from preview, force that post_id
     chosen_id = data.get("chosen_thread_id", "").strip()
-    if chosen_id:
+    if chosen_id and not reddit_url:
         cfg["reddit"]["thread"]["post_id"] = chosen_id
-    else:
+    elif not reddit_url:
         cfg["reddit"]["thread"]["post_id"] = ""
 
     cfg["settings"]["background"]["background_video"] = data.get("video", "minecraft")
@@ -261,14 +276,13 @@ def generate():
             vids = _list_generated_videos()
             if vids:
                 generation["video_path"] = vids[0]["path"]
-        except SystemExit as exc:
-            # The bot calls exit() in several places (e.g. no comments found).
-            # Treat a clean exit (code 0) as success, otherwise as error.
-            generation["log"] = buf.getvalue()
-            if exc.code == 0 or exc.code is None:
-                generation["result"] = "Finished."
             else:
-                generation["error"] = f"Bot exited with code {exc.code}"
+                generation["error"] = "Bot finished but no video file was created. Check the log for details."
+        except SystemExit as exc:
+            # The bot may call exit() in several places.
+            # Treat ANY SystemExit as an error because the video wasn't produced.
+            generation["log"] = buf.getvalue()
+            generation["error"] = f"Bot exited early (code {exc.code}). Check the log for details."
         except Exception as exc:
             generation["log"] = buf.getvalue() + "\n" + traceback.format_exc()
             generation["error"] = str(exc)
@@ -371,6 +385,18 @@ def config_route():
     with open(BASE_DIR / "config.toml", "w") as f:
         toml.dump(settings.config, f)
     return jsonify({"status": "saved"})
+
+
+@app.route("/clear_done", methods=["POST"])
+def clear_done():
+    """Clear the done-videos list so previously generated threads can be reused."""
+    done_path = BASE_DIR / "video_creation" / "data" / "videos.json"
+    try:
+        with open(done_path, "w", encoding="utf-8") as f:
+            json.dump([], f)
+        return jsonify({"status": "cleared"})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.route("/download/<path:filename>")

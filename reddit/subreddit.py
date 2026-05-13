@@ -32,8 +32,13 @@ def get_subreddit_threads(POST_ID: str):
         search_limit = int(settings.config["reddit"]["thread"].get("search_limit", 25))
         threads = list(reddit.search(search_query, sort=search_sort, time_filter=search_time, limit=search_limit))
         if not threads:
-            print_substep("No results found for search query.")
-            exit()
+            # Fallback: try with just the first word of the query
+            first_word = search_query.split()[0] if search_query.split() else ""
+            if first_word and first_word != search_query:
+                print_substep(f"No results for full query. Trying fallback: '{first_word}'")
+                threads = list(reddit.search(first_word, sort=search_sort, time_filter=search_time, limit=search_limit))
+            if not threads:
+                raise RuntimeError(f"No results found for search query '{search_query}'. Try a broader term or change the time filter.")
         # For search mode we bypass the subreddit object and pick directly
         subreddit = None
         if settings.config["ai"]["ai_similarity_enabled"]:
@@ -45,10 +50,20 @@ def get_subreddit_threads(POST_ID: str):
             submission, similarity_score = get_subreddit_undone(threads, subreddit, similarity_scores=similarity_scores)
         else:
             submission = get_subreddit_undone(threads, subreddit)
+        if submission is None:
+            raise RuntimeError("All found threads were already used or filtered out. Try a different search or clear the done-videos list.")
     else:
-        if not settings.config["reddit"]["thread"][
+        # If a specific post_id is configured, use it directly (bypass subreddit selection)
+        if settings.config["reddit"]["thread"]["post_id"]:
+            post_ids = str(settings.config["reddit"]["thread"]["post_id"]).split("+")
+            if len(post_ids) == 1:
+                submission = reddit.submission(id=post_ids[0])
+            else:
+                # Multiple post IDs — handled by main.py loop, here we just take the first
+                submission = reddit.submission(id=post_ids[0])
+        elif not settings.config["reddit"]["thread"][
             "subreddit"
-        ]:  # note to user. you can have multiple subreddits via reddit.subreddit("redditdev+learnpython")
+        ]:
             try:
                 subreddit = reddit.subreddit(
                     re.sub(r"r\/", "", input("What subreddit would you like to pull from? "))
@@ -61,30 +76,23 @@ def get_subreddit_threads(POST_ID: str):
             sub = settings.config["reddit"]["thread"]["subreddit"]
             print_substep(f"Using subreddit: r/{sub} from TOML config")
             subreddit_choice = sub
-            if str(subreddit_choice).casefold().startswith("r/"):  # removes the r/ from the input
+            if str(subreddit_choice).casefold().startswith("r/"):
                 subreddit_choice = subreddit_choice[2:]
             subreddit = reddit.subreddit(subreddit_choice)
 
-        if POST_ID:  # would only be called if there are multiple queued posts
+        if POST_ID:
             submission = reddit.submission(id=POST_ID)
-
-        elif (
-            settings.config["reddit"]["thread"]["post_id"]
-            and len(str(settings.config["reddit"]["thread"]["post_id"]).split("+")) == 1
-        ):
-            submission = reddit.submission(id=settings.config["reddit"]["thread"]["post_id"])
-        elif settings.config["ai"]["ai_similarity_enabled"]:  # ai sorting based on comparison
+        elif settings.config["ai"]["ai_similarity_enabled"]:
             threads = list(subreddit.hot(limit=50))
             keywords = settings.config["ai"]["ai_similarity_keywords"].split(",")
             keywords = [keyword.strip() for keyword in keywords]
-            # Reformat the keywords for printing
             keywords_print = ", ".join(keywords)
             print(f"Sorting threads by similarity to the given keywords: {keywords_print}")
             threads, similarity_scores = sort_by_similarity(threads, keywords)
             submission, similarity_score = get_subreddit_undone(
                 threads, subreddit, similarity_scores=similarity_scores
             )
-        else:
+        elif not settings.config["reddit"]["thread"]["post_id"]:
             threads = list(subreddit.hot(limit=25))
             submission = get_subreddit_undone(threads, subreddit)
 
@@ -92,8 +100,7 @@ def get_subreddit_threads(POST_ID: str):
         return get_subreddit_threads(POST_ID)  # submission already done. rerun
 
     elif not submission.num_comments and settings.config["settings"]["storymode"] == "false":
-        print_substep("No comments found. Skipping.")
-        exit()
+        raise RuntimeError("No comments found on this post. Try a different thread or enable story mode.")
 
     submission = check_done(submission)  # double-checking
 

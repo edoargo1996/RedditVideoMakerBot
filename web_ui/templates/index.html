@@ -216,10 +216,16 @@ pre.log .info { color: #64b5f6; }
       <input type="text" id="subreddit" placeholder="e.g. AskReddit" value="AskReddit">
     </div>
 
+    <div style="margin-top:14px">
+      <label for="reddit_url">🔗 Or paste a Reddit post URL <span class="hint">— skips search and uses this exact post</span></label>
+      <input type="text" id="reddit_url" placeholder="https://www.reddit.com/r/.../comments/.../">
+    </div>
+
     <div style="margin-top:18px">
       <button id="search-btn" class="btn small secondary" onclick="doPreview()">
         <span id="search-btn-text">🔍 Search threads</span>
       </button>
+      <button class="btn small" style="margin-left:8px;background:transparent;border:1px solid var(--border);color:var(--muted)" onclick="clearDone()">🗑 Clear done list</button>
       <span id="search-status" style="margin-left:10px; font-size:.85rem;"></span>
     </div>
 
@@ -385,6 +391,17 @@ function formatLog(text) {
     .replace(/Getting|Searching|Downloading|Rendering|Making/g, m => `<span class="info">${m}</span>`);
 }
 
+async function clearDone() {
+  if (!confirm("Clear the 'already done' list? This lets you re-generate videos from previously used threads.")) return;
+  const res = await fetch('/clear_done', {method: 'POST'});
+  const data = await res.json();
+  if (data.status === 'cleared') {
+    alert('Done list cleared! You can now re-use previous threads.');
+  } else {
+    alert('Error: ' + (data.error || 'unknown'));
+  }
+}
+
 async function loadVideos() {
   const res = await fetch('/videos');
   const data = await res.json();
@@ -535,6 +552,7 @@ async function startGeneration() {
     voice: document.getElementById('voice').value,
     storymode: document.getElementById('storymode').checked,
     use_local_only: document.getElementById('use_local_only').checked,
+    reddit_url: document.getElementById('reddit_url').value.trim(),
     chosen_thread_id: chosenThreadId,
   };
 
