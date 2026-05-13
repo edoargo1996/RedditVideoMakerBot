@@ -18,17 +18,44 @@ from flask import Flask, jsonify, render_template, request, send_from_directory
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
-# Load bot config before anything else
+# Load bot config manually so we never block on interactive prompts.
 from utils import settings
+import toml
 
-_cfg = settings.check_toml(
-    str(BASE_DIR / "utils" / ".config.template.toml"),
-    str(BASE_DIR / "config.toml"),
-)
-if _cfg is False:
-    print("Failed to load/create config.toml")
-    sys.exit(1)
-settings.config = _cfg
+def _deep_merge(base, overlay):
+    for k, v in overlay.items():
+        if isinstance(v, dict) and k in base and isinstance(base[k], dict):
+            _deep_merge(base[k], v)
+        else:
+            base[k] = v
+    return base
+
+# Start from an empty config and fill with template defaults, then overlay user config
+settings.config = {}
+with open(BASE_DIR / "utils" / ".config.template.toml") as f:
+    template = toml.load(f)
+# Convert template entries (which are dicts with metadata) to plain values
+def _flatten_template(obj):
+    out = {}
+    for k, v in obj.items():
+        if isinstance(v, dict) and "default" in v:
+            out[k] = v["default"]
+        elif isinstance(v, dict):
+            out[k] = _flatten_template(v)
+        else:
+            out[k] = v
+    return out
+
+settings.config = _flatten_template(template)
+
+# Overlay user config.toml if it exists
+if (BASE_DIR / "config.toml").exists():
+    with open(BASE_DIR / "config.toml") as f:
+        user_cfg = toml.load(f)
+    settings.config = _deep_merge(settings.config, user_cfg)
+
+import os
+os.environ["translators_default_region"] = "EN"
 
 from main import main
 

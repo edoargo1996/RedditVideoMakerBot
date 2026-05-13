@@ -150,41 +150,62 @@ class FakeSubreddit:
 
 
 class FakeSearchResults:
-    """Search results across all of Reddit."""
+    """Search results across all of Reddit via PullPush API (no auth needed)."""
 
     def __init__(self, query: str, sort: str = "hot", time_filter: str = "all", limit: int = 25):
         self.query = query
         self.sort = sort
         self.time_filter = time_filter
         self.limit = limit
-        self._last_call = 0.0
 
-    def _rate_limit(self):
-        elapsed = time.time() - self._last_call
-        if elapsed < 0.5:
-            time.sleep(0.5 - elapsed)
-        self._last_call = time.time()
+    def _params(self) -> dict:
+        # PullPush sorting: score, num_comments, created_utc
+        if self.sort == "new":
+            sort_type, sort_dir = "created_utc", "desc"
+        elif self.sort == "top":
+            sort_type, sort_dir = "score", "desc"
+        elif self.sort == "comments":
+            sort_type, sort_dir = "num_comments", "desc"
+        else:
+            # hot, relevance -> fallback to score desc
+            sort_type, sort_dir = "score", "desc"
 
-    def _get(self, url: str, params: Optional[dict] = None) -> dict:
-        self._rate_limit()
-        session = _get_session()
-        resp = session.get(url, params=params or {}, timeout=30)
-        resp.raise_for_status()
-        return resp.json()
-
-    def __iter__(self):
-        url = f"{REDDIT_BASE}/search.json"
         params = {
             "q": self.query,
-            "sort": self.sort,
-            "t": self.time_filter,
-            "limit": self.limit,
-            "type": "sr,link",
+            "size": self.limit,
+            "sort": sort_dir,
+            "sort_type": sort_type,
         }
-        data = self._get(url, params)
-        for child in data.get("data", {}).get("children", []):
-            if child.get("kind") == "t3":
-                yield FakeSubmission(child["data"])
+
+        now = int(time.time())
+        if self.time_filter == "hour":
+            params["after"] = now - 3600
+        elif self.time_filter == "day":
+            params["after"] = now - 86400
+        elif self.time_filter == "week":
+            params["after"] = now - 604800
+        elif self.time_filter == "month":
+            params["after"] = now - 2592000
+        elif self.time_filter == "year":
+            params["after"] = now - 31536000
+
+        return params
+
+    def __iter__(self):
+        url = "https://api.pullpush.io/reddit/search/submission/"
+        session = _get_session()
+        resp = session.get(url, params=self._params(), timeout=30)
+        try:
+            resp.raise_for_status()
+            payload = resp.json()
+        except Exception as exc:
+            raise RuntimeError(f"PullPush search failed: {exc}") from exc
+
+        for post in payload.get("data", []):
+            # PullPush returns raw API fields; author is a string
+            if isinstance(post.get("author"), str):
+                post["author"] = post["author"]
+            yield FakeSubmission(post)
 
 
 class FakeReddit:
