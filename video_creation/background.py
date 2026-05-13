@@ -72,13 +72,19 @@ def get_start_and_end_times(video_length: int, length_of_clip: int) -> Tuple[int
 def get_background_config(mode: str):
     """Fetch the background/s configuration"""
     try:
-        choice = str(settings.config["settings"]["background"][f"background_{mode}"]).casefold()
+        choice = str(settings.config["settings"]["background"][f"background_{mode}"])
     except AttributeError:
         print_substep("No background selected. Picking random background'")
         choice = None
 
+    # Local file override (must check BEFORE casefold to preserve filename case)
+    if choice and choice.startswith("__local__:"):
+        filename = choice.split(":", 1)[1]
+        return ["", filename, "Local", "center", True]  # True flag = is_local
+
+    choice = choice.casefold() if choice else choice
+
     # Handle default / not supported background using default option.
-    # Default : pick random from supported background.
     if not choice or choice not in background_options[mode]:
         choice = random.choice(list(background_options[mode].keys()))
 
@@ -87,6 +93,11 @@ def get_background_config(mode: str):
 
 def download_background_video(background_config):
     """Downloads the background/s video from YouTube or searches automatically."""
+    # Skip if local file
+    if len(background_config) > 4 and background_config[4] is True:
+        print_substep(f"Using local background video: {background_config[1]}")
+        return
+
     Path("./assets/backgrounds/video/").mkdir(parents=True, exist_ok=True)
     # background_config: [uri, filename, credit, position, search_query?]
     uri = background_config[0]
@@ -292,8 +303,14 @@ def chop_background(background_config: Dict[str, Tuple], video_length: int, redd
         background_audio.write_audiofile(f"assets/temp/{thread_id}/background.mp3")
 
     print_step("Finding a spot in the backgrounds video to chop...✂️")
-    video_choice = f"{background_config['video'][2]}-{background_config['video'][1]}"
-    background_video = VideoFileClip(f"assets/backgrounds/video/{video_choice}")
+    is_local = len(background_config['video']) > 4 and background_config['video'][4] is True
+    if is_local:
+        video_path = f"assets/backgrounds/video/{background_config['video'][1]}"
+        video_choice = background_config['video'][1]
+    else:
+        video_choice = f"{background_config['video'][2]}-{background_config['video'][1]}"
+        video_path = f"assets/backgrounds/video/{video_choice}"
+    background_video = VideoFileClip(video_path)
     if background_video.duration < video_length:
         print_substep(
             f"Background ({background_video.duration:.1f}s) is shorter than video ({video_length}s). Looping background...",
@@ -310,14 +327,14 @@ def chop_background(background_config: Dict[str, Tuple], video_length: int, redd
         )
         # Extract video subclip
         try:
-            with VideoFileClip(f"assets/backgrounds/video/{video_choice}") as video:
+            with VideoFileClip(video_path) as video:
                 new = video.subclipped(start_time_video, end_time_video)
                 new.write_videofile(f"assets/temp/{thread_id}/background.mp4")
 
         except (OSError, IOError):  # ffmpeg issue see #348
             print_substep("FFMPEG issue. Trying again...")
             ffmpeg_extract_subclip(
-                f"assets/backgrounds/video/{video_choice}",
+                video_path,
                 start_time_video,
                 end_time_video,
                 outputfile=f"assets/temp/{thread_id}/background.mp4",

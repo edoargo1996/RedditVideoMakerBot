@@ -97,7 +97,10 @@ def get_subreddit_threads(POST_ID: str):
             submission = get_subreddit_undone(threads, subreddit)
 
     if submission is None:
-        return get_subreddit_threads(POST_ID)  # submission already done. rerun
+        raise RuntimeError(
+            "All found threads were already used or filtered out. "
+            "Try a different search query, change the time filter, or click '🗑 Clear done list' to reuse previous threads."
+        )
 
     elif not submission.num_comments and settings.config["settings"]["storymode"] == "false":
         raise RuntimeError("No comments found on this post. Try a different thread or enable story mode.")

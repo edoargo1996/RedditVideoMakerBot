@@ -242,6 +242,12 @@ def generate():
     cfg["settings"]["background"]["background_video"] = data.get("video", "minecraft")
     cfg["settings"]["background"]["background_audio"] = data.get("audio", "lofi")
     cfg["settings"]["background"]["use_local_only"] = data.get("use_local_only", False)
+
+    # Local background file override
+    local_video = data.get("local_video", "").strip()
+    if local_video:
+        cfg["settings"]["background"]["background_video"] = f"__local__:{local_video}"
+
     cfg["settings"]["tts"]["voice_choice"] = data.get("voice", "googletranslate")
     cfg["settings"]["storymode"] = data.get("storymode", False)
     cfg["settings"]["times_to_run"] = 1
@@ -370,6 +376,21 @@ def list_backgrounds():
     """Return available background themes."""
     videos, audios = _available_backgrounds()
     return jsonify({"videos": videos, "audios": audios})
+
+
+@app.route("/local_backgrounds")
+def list_local_backgrounds():
+    """Return locally downloaded background video files."""
+    video_dir = BASE_DIR / "assets" / "backgrounds" / "video"
+    files = []
+    if video_dir.exists():
+        for p in sorted(video_dir.glob("*.mp4")):
+            files.append({
+                "name": p.name,
+                "size_mb": round(p.stat().st_size / (1024 * 1024), 2),
+                "modified": datetime.fromtimestamp(p.stat().st_mtime).isoformat(),
+            })
+    return jsonify({"files": files})
 
 
 @app.route("/config", methods=["GET", "POST"])
