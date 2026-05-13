@@ -170,6 +170,14 @@ def generate():
             vids = _list_generated_videos()
             if vids:
                 generation["video_path"] = vids[0]["path"]
+        except SystemExit as exc:
+            # The bot calls exit() in several places (e.g. no comments found).
+            # Treat a clean exit (code 0) as success, otherwise as error.
+            generation["log"] = buf.getvalue()
+            if exc.code == 0 or exc.code is None:
+                generation["result"] = "Finished."
+            else:
+                generation["error"] = f"Bot exited with code {exc.code}"
         except Exception as exc:
             generation["log"] = buf.getvalue() + "\n" + traceback.format_exc()
             generation["error"] = str(exc)

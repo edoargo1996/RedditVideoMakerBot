@@ -103,14 +103,14 @@ def download_background_video(background_config: Tuple[str, str, str, Any]):
 
 
 def _generate_fallback_video(target: Path, label: str):
-    """Generate a 10-minute looping animated fallback video with ffmpeg."""
+    """Generate a 3-minute animated fallback video with ffmpeg (cellular automaton)."""
     from subprocess import run, DEVNULL
     label_safe = label.replace("'", "")
     cmd = [
         "ffmpeg", "-y",
         "-f", "lavfi",
-        "-i", "mandelbrot=s=1080x1920:rate=30",
-        "-t", "600",
+        "-i", "cellauto=s=1080x1920:r=30:rule=110",
+        "-t", "180",
         "-vf", f"drawtext=text='{label_safe}':fontsize=80:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2:box=1:boxcolor=black@0.5,format=yuv420p",
         "-c:v", "libx264",
         "-preset", "fast",

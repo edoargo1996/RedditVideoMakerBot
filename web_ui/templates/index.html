@@ -207,10 +207,13 @@ async function checkStatus() {
     if (s.error) {
       setStatus('err', '❌ Error: ' + s.error);
       if (s.log) { log.style.display='block'; log.textContent = s.log; }
-    } else {
+    } else if (s.result) {
       setStatus('ok', '✅ ' + s.result + (s.video_path ? `<br><a href="/download/${s.video_path}" style="color:#4caf50;text-decoration:underline">Download video</a>` : ''));
       if (s.log) { log.style.display='block'; log.textContent = s.log; }
       loadVideos();
+    } else {
+      setStatus('err', '❌ Something went wrong (no result or error recorded).');
+      if (s.log) { log.style.display='block'; log.textContent = s.log; }
     }
   }
 }
