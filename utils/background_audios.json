@@ -1,18 +1,33 @@
 {
-    "__comment": "Supported Backgrounds Audio. Can add/remove background audio here...",
+    "__comment": "Supported Backgrounds. Can add/remove background audio here...",
     "lofi": [
-        "https://www.youtube.com/watch?v=LTphVIore3A",
+        "https://www.youtube.com/watch?v=5qap5aO4i9A",
         "lofi.mp3",
-        "Super Lofi World"
+        "Lofi Girl"
     ],
-    "lofi-2":[
-        "https://www.youtube.com/watch?v=BEXL80LS0-I",
+    "lofi-2": [
+        "https://www.youtube.com/watch?v=DWcJFNfaw9c",
         "lofi-2.mp3",
-        "stompsPlaylist"
+        "Chill Music Lab"
     ],
-    "chill-summer":[
-        "https://www.youtube.com/watch?v=EZE8JagnBI8",
+    "chill-summer": [
+        "https://www.youtube.com/watch?v=lxQ8V-3FjuE",
         "chill-summer.mp3",
-        "Mellow Vibes Radio"
+        "Peyruis"
+    ],
+    "cinematic": [
+        "https://www.youtube.com/watch?v=sF80I-TQiWw",
+        "cinematic.mp3",
+        "NoCopyrightSounds"
+    ],
+    "upbeat": [
+        "https://www.youtube.com/watch?v=MkNeIUgNPQ8",
+        "upbeat.mp3",
+        "Brock Berrigan"
+    ],
+    "ambient": [
+        "https://www.youtube.com/watch?v=5qap5aO4i9A",
+        "ambient.mp3",
+        "Lofi Girl"
     ]
 }

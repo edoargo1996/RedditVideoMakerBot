@@ -6,8 +6,6 @@ from pathlib import Path
 from subprocess import Popen
 from typing import Dict, NoReturn
 
-from prawcore import ResponseException
-
 from reddit.subreddit import get_subreddit_threads
 from utils import settings
 from utils.cleanup import cleanup
@@ -119,18 +117,14 @@ if __name__ == "__main__":
             main()
     except KeyboardInterrupt:
         shutdown()
-    except ResponseException:
-        print_markdown("## Invalid credentials")
-        print_markdown("Please check your credentials in the config.toml file")
-        shutdown()
     except Exception as err:
         config["settings"]["tts"]["tiktok_sessionid"] = "REDACTED"
         config["settings"]["tts"]["elevenlabs_api_key"] = "REDACTED"
         config["settings"]["tts"]["openai_api_key"] = "REDACTED"
         print_step(
-            f"Sorry, something went wrong with this version! Try again, and feel free to report this issue at GitHub or the Discord community.\n"
-            f"Version: {__VERSION__} \n"
-            f"Error: {err} \n"
+            f"Sorry, something went wrong with this version! Try again, and feel free to report this issue at GitHub or the Discord community.\\n"
+            f"Version: {__VERSION__} \\n"
+            f"Error: {err} \\n"
             f'Config: {config["settings"]}'
         )
         raise err

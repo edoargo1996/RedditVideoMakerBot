@@ -78,7 +78,8 @@ def download_background_video(background_config: Tuple[str, str, str, Any]):
     Path("./assets/backgrounds/video/").mkdir(parents=True, exist_ok=True)
     # note: make sure the file name doesn't include an - in it
     uri, filename, credit, _ = background_config
-    if Path(f"assets/backgrounds/video/{credit}-{filename}").is_file():
+    target = Path(f"assets/backgrounds/video/{credit}-{filename}")
+    if target.is_file():
         return
     print_step(
         "We need to download the backgrounds videos. they are fairly large but it's only done once. 😎"
@@ -87,13 +88,37 @@ def download_background_video(background_config: Tuple[str, str, str, Any]):
     print_substep(f"Downloading {filename} from {uri}")
     ydl_opts = {
         "format": "bestvideo[height<=1080][ext=mp4]",
-        "outtmpl": f"assets/backgrounds/video/{credit}-{filename}",
+        "outtmpl": str(target),
         "retries": 10,
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download(uri)
-    print_substep("Background video downloaded successfully! 🎉", style="bold green")
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download(uri)
+        print_substep("Background video downloaded successfully! 🎉", style="bold green")
+    except Exception as exc:
+        print_substep(f"YouTube download failed ({exc}). Generating local fallback video...", style="bold yellow")
+        _generate_fallback_video(target, credit)
+        print_substep("Fallback video generated! 🎉", style="bold green")
+
+
+def _generate_fallback_video(target: Path, label: str):
+    """Generate a 10-minute looping animated fallback video with ffmpeg."""
+    from subprocess import run, DEVNULL
+    label_safe = label.replace("'", "")
+    cmd = [
+        "ffmpeg", "-y",
+        "-f", "lavfi",
+        "-i", "mandelbrot=s=1080x1920:rate=30",
+        "-t", "600",
+        "-vf", f"drawtext=text='{label_safe}':fontsize=80:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2:box=1:boxcolor=black@0.5,format=yuv420p",
+        "-c:v", "libx264",
+        "-preset", "fast",
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
+        str(target),
+    ]
+    run(cmd, stdout=DEVNULL, stderr=DEVNULL, check=True)
 
 
 def download_background_audio(background_config: Tuple[str, str, str]):
@@ -101,7 +126,8 @@ def download_background_audio(background_config: Tuple[str, str, str]):
     Path("./assets/backgrounds/audio/").mkdir(parents=True, exist_ok=True)
     # note: make sure the file name doesn't include an - in it
     uri, filename, credit = background_config
-    if Path(f"assets/backgrounds/audio/{credit}-{filename}").is_file():
+    target = Path(f"assets/backgrounds/audio/{credit}-{filename}")
+    if target.is_file():
         return
     print_step(
         "We need to download the backgrounds audio. they are fairly large but it's only done once. 😎"
@@ -109,15 +135,34 @@ def download_background_audio(background_config: Tuple[str, str, str]):
     print_substep("Downloading the backgrounds audio... please be patient 🙏 ")
     print_substep(f"Downloading {filename} from {uri}")
     ydl_opts = {
-        "outtmpl": f"./assets/backgrounds/audio/{credit}-{filename}",
+        "outtmpl": str(target),
         "format": "bestaudio/best",
         "extract_audio": True,
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([uri])
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([uri])
+        print_substep("Background audio downloaded successfully! 🎉", style="bold green")
+    except Exception as exc:
+        print_substep(f"YouTube download failed ({exc}). Generating silent fallback audio...", style="bold yellow")
+        _generate_fallback_audio(target)
+        print_substep("Fallback audio generated! 🎉", style="bold green")
 
-    print_substep("Background audio downloaded successfully! 🎉", style="bold green")
+
+def _generate_fallback_audio(target: Path):
+    """Generate a 10-minute silent MP3 with ffmpeg."""
+    from subprocess import run, DEVNULL
+    cmd = [
+        "ffmpeg", "-y",
+        "-f", "lavfi",
+        "-i", "anullsrc=r=44100:cl=stereo",
+        "-t", "600",
+        "-acodec", "libmp3lame",
+        "-q:a", "4",
+        str(target),
+    ]
+    run(cmd, stdout=DEVNULL, stderr=DEVNULL, check=True)
 
 
 def chop_background(background_config: Dict[str, Tuple], video_length: int, reddit_object: dict):

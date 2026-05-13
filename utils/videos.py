@@ -1,23 +1,21 @@
 import json
 import time
 
-from praw.models import Submission
-
 from utils import settings
 from utils.console import print_step
 
 
 def check_done(
-    redditobj: Submission,
-) -> Submission:
+    redditobj,
+):
     # don't set this to be run anyplace that isn't subreddit.py bc of inspect stack
     """Checks if the chosen post has already been generated
 
     Args:
-        redditobj (Submission): Reddit object gotten from reddit/subreddit.py
+        redditobj: Reddit object gotten from reddit/subreddit.py
 
     Returns:
-        Submission|None: Reddit object in args
+        Reddit object in args or None
     """
     with open("./video_creation/data/videos.json", "r", encoding="utf-8") as done_vids_raw:
         done_videos = json.load(done_vids_raw)

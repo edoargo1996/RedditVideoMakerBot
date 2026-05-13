@@ -59,5 +59,41 @@
         "steep.mp4",
         "joel",
         "center"
+    ],
+    "trackmania": [
+        "https://www.youtube.com/watch?v=1t1p7k43D2s",
+        "trackmania.mp4",
+        "TrackmaniaNoCopy",
+        "center"
+    ],
+    "racing-cars": [
+        "https://www.youtube.com/watch?v=qGa9kWREOnE",
+        "racing-cars.mp4",
+        "Achy Gaming",
+        "center"
+    ],
+    "3d-printing": [
+        "https://www.youtube.com/watch?v=n_Dv4JMiwK8",
+        "3d-printing.mp4",
+        "bbswitzer",
+        "center"
+    ],
+    "parkour": [
+        "https://www.youtube.com/watch?v=n_Dv4JMiwK8",
+        "parkour-gameplay.mp4",
+        "bbswitzer",
+        "center"
+    ],
+    "subnautica": [
+        "https://www.youtube.com/watch?v=Pt5_GSKIWQM",
+        "subnautica.mp4",
+        "Itslpsn",
+        "center"
+    ],
+    "satisfactory": [
+        "https://www.youtube.com/watch?v=uVKxtdMgJVU",
+        "satisfactory.mp4",
+        "No Copyright Gameplay",
+        "center"
     ]
 }

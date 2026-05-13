@@ -96,6 +96,10 @@ def get_subreddit_undone(submissions: list, subreddit, times_checked=0, similari
     if index == len(VALID_TIME_FILTERS):
         print("All submissions have been done.")
 
+    if subreddit is None:
+        print("Search mode: no more submissions to try.")
+        return None
+
     return get_subreddit_undone(
         subreddit.top(
             time_filter=VALID_TIME_FILTERS[index],
