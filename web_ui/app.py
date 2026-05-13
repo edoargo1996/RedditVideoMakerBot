@@ -268,6 +268,21 @@ def list_backgrounds():
     return jsonify({"videos": videos, "audios": audios})
 
 
+@app.route("/config", methods=["GET", "POST"])
+def config_route():
+    if request.method == "GET":
+        return jsonify({
+            "pexels_api_key": settings.config.get("settings", {}).get("pexels_api_key", ""),
+        })
+    data = request.get_json(force=True) or {}
+    key = data.get("pexels_api_key", "").strip()
+    settings.config.setdefault("settings", {})
+    settings.config["settings"]["pexels_api_key"] = key
+    with open(BASE_DIR / "config.toml", "w") as f:
+        toml.dump(settings.config, f)
+    return jsonify({"status": "saved"})
+
+
 @app.route("/download/<path:filename>")
 def download(filename):
     return send_from_directory(BASE_DIR, filename, as_attachment=True)

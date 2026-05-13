@@ -1,142 +1,173 @@
-# Reddit Video Maker Bot 🎥
+# RedditVideoMakerBot — Fork Web UI + Auto-Downloader 🎬
 
-All done WITHOUT video editing or asset compiling. Just pure ✨programming magic✨.
+Fork di [RedditVideoMakerBot](https://github.com/elebumm/RedditVideoMakerBot) con **Web UI**, **downloader automatico** di background (video + audio) e **nessuna API Reddit necessaria**.
 
-Created by Lewis Menelaws & [TMRRW](https://tmrrwinc.ca)
+## Cosa c'è di diverso in questo fork
 
-<a target="_blank" href="https://tmrrwinc.ca">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/6053155/170528535-e274dc0b-7972-4b27-af22-637f8c370133.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/6053155/170528582-cb6671e7-5a2f-4bd4-a048-0e6cfa54f0f7.png">
-  <img src="https://user-images.githubusercontent.com/6053155/170528582-cb6671e7-5a2f-4bd4-a048-0e6cfa54f0f7.png" width="350">
-</picture>
-
-</a>
-
-## Video Explainer
-
-[![lewisthumbnail](https://user-images.githubusercontent.com/6053155/173631669-1d1b14ad-c478-4010-b57d-d79592a789f2.png)
-](https://www.youtube.com/watch?v=3gjcY_00U1w)
-
-## Motivation 🤔
-
-These videos on TikTok, YouTube and Instagram get MILLIONS of views across all platforms and require very little effort.
-The only original thing being done is the editing and gathering of all materials...
-
-... but what if we can automate that process? 🤔
-
-## Disclaimers 🚨
-
-- **At the moment**, this repository won't attempt to upload this content through this bot. It will give you a file that
-  you will then have to upload manually. This is for the sake of avoiding any sort of community guideline issues.
-
-## Requirements
-
-- Python 3.10
-- Playwright (this should install automatically in installation)
-
-## Installation 👩‍💻
-
-1. Clone this repository:
-    ```sh
-    git clone https://github.com/elebumm/RedditVideoMakerBot.git
-    cd RedditVideoMakerBot
-    ```
-
-2. Create and activate a virtual environment:
-    - On **Windows**:
-        ```sh
-        python -m venv ./venv
-        .\venv\Scripts\activate
-        ```
-    - On **macOS and Linux**:
-        ```sh
-        python3 -m venv ./venv
-        source ./venv/bin/activate
-        ```
-
-3. Install the required dependencies:
-    ```sh
-    pip install -r requirements.txt
-    ```
-
-4. Install Playwright and its dependencies:
-    ```sh
-    python -m playwright install
-    python -m playwright install-deps
-    ```
+- ✅ **Web UI** — genera video dal browser invece che da terminale interattivo
+- ✅ **Nessuna API Reddit** — usa scraping pubblico (PullPush + JSON) senza client_id/secret
+- ✅ **Auto-downloader** — se manca un background, cerca e scarica automaticamente da YouTube
+- ✅ **Pexels fallback** — opzionale, per download ancora più stabili (API key gratuita)
+- ✅ **Generazione audio procedurale** — se manca la musica, genera lofi/ambient con ffmpeg
+- ✅ **Temi personalizzati** — aggiungi nuovi background (video/audio) direttamente dalla UI
+- ✅ **Headless server** — funziona su VPS/server senza monitor (xvfb)
+- ✅ **GPU encoding non necessaria** — usa libx264 CPU
 
 ---
 
-**EXPERIMENTAL!!!!**
+## Requisiti
 
-   - On macOS and Linux (Debian, Arch, Fedora, CentOS, and based on those), you can run an installation script that will automatically install steps 1 to 3. (requires bash)
-   - `bash <(curl -sL https://raw.githubusercontent.com/elebumm/RedditVideoMakerBot/master/install.sh)`
-   - This can also be used to update the installation
+| Componente | Installazione |
+|---|---|
+| Python 3.11+ | `python3 --version` |
+| ffmpeg | `sudo apt install ffmpeg` (Debian/Ubuntu) |
+| xvfb | `sudo apt install xvfb` (solo per server headless) |
+| Git | `sudo apt install git` |
 
 ---
 
-5. Run the bot:
-    ```sh
-    python main.py
-    ```
+## Installazione
 
-6. Visit [the Reddit Apps page](https://www.reddit.com/prefs/apps), and set up an app that is a "script". Paste any URL in the redirect URL field, for example: `https://jasoncameron.dev`.
+### 1. Clona il repo
 
-7. The bot will prompt you to fill in your details to connect to the Reddit API and configure the bot to your liking.
+```bash
+git clone https://github.com/edoargo1996/RedditVideoMakerBot.git
+cd RedditVideoMakerBot
+```
 
-8. Enjoy 😎
+### 2. Ambiente virtuale e dipendenze
 
-9. If you need to reconfigure the bot, simply open the `config.toml` file and delete the lines that need to be changed. On the next run of the bot, it will help you reconfigure those options.
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+```
 
-(Note: If you encounter any errors installing or running the bot, try using `python3` or `pip3` instead of `python` or `pip`.)
+### 3. Playwright (browser per screenshot Reddit)
 
-For a more detailed guide about the bot, please refer to the [documentation](https://reddit-video-maker-bot.netlify.app/).
+```bash
+python -m playwright install chromium
+```
 
-## Video
+---
 
-https://user-images.githubusercontent.com/66544866/173453972-6526e4e6-c6ef-41c5-ab40-5d275e724e7c.mp4
+## Avvio
 
-## Contributing & Ways to improve 📈
+### Desktop / PC con monitor
 
-In its current state, this bot does exactly what it needs to do. However, improvements can always be made!
+```bash
+source venv/bin/activate
+python web_ui/app.py
+```
 
-I have tried to simplify the code so anyone can read it and start contributing at any skill level. Don't be shy :) contribute!
+Apri nel browser: **http://localhost:5000**
 
-- [ ] Creating better documentation and adding a command line interface.
-- [x] Allowing the user to choose background music for their videos.
-- [x] Allowing users to choose a reddit thread instead of being randomized.
-- [x] Allowing users to choose a background that is picked instead of the Minecraft one.
-- [x] Allowing users to choose between any subreddit.
-- [x] Allowing users to change voice.
-- [x] Checks if a video has already been created
-- [x] Light and Dark modes
-- [x] NSFW post filter
+### Server headless / VPS / WSL
 
-Please read our [contributing guidelines](CONTRIBUTING.md) for more detailed information.
+```bash
+source venv/bin/activate
+xvfb-run -a python web_ui/app.py
+```
 
-### For any questions or support join the [Discord](https://discord.gg/qfQSx45xCV) server
+Oppure usa lo script incluso:
 
-## Developers and maintainers.
+```bash
+chmod +x run_web.sh
+xvfb-run -a ./run_web.sh
+```
 
-Elebumm (Lewis#6305) - https://github.com/elebumm (Founder)
+> **Nota:** se stai avviando su un server remoto, usa l'**IP della macchina** al posto di `localhost` (es. `http://192.168.1.50:5000`).
 
-Jason Cameron - https://github.com/JasonLovesDoggo (Maintainer)
+---
 
-Simon (OpenSourceSimon) - https://github.com/OpenSourceSimon
+## Configurazione
 
-CallumIO (c.#6837) - https://github.com/CallumIO
+La configurazione viene gestita automaticamente dalla Web UI, ma puoi anche editare il file `config.toml` manualmente.
 
-Verq (Verq#2338) - https://github.com/CordlessCoder
+### API Key Pexels (opzionale, consigliata)
 
-LukaHietala (Pix.#0001) - https://github.com/LukaHietala
+Se vuoi download di background video **più stabili e veloci** rispetto a YouTube:
 
-Freebiell (Freebie#3263) - https://github.com/FreebieII
+1. Registrati gratis su [pexels.com/api](https://www.pexels.com/api/)
+2. Copia la tua API key
+3. Inseriscila nella Web UI (sezione *Settings*) oppure in `config.toml`:
 
-Aman Raza (electro199#8130) - https://github.com/electro199
+```toml
+[settings]
+pexels_api_key = "la-tua-api-key"
+```
 
-Cyteon (cyteon) - https://github.com/cyteon
+---
 
+## Web UI — Guida
 
-## LICENSE
-[Roboto Fonts](https://fonts.google.com/specimen/Roboto/about) are licensed under [Apache License V2](https://www.apache.org/licenses/LICENSE-2.0)
+### Generare un video
+
+1. Apri `http://localhost:5000`
+2. Scegli la modalità:
+   - **Search Reddit** — cerca per argomento (es. "3D printing", "gaming news")
+   - **Subreddit only** — usa un subreddit specifico (es. `AskReddit`)
+3. Scegli il **tema video** e **tema audio**
+4. Clicca **🚀 Generate Video**
+5. Attendi (il primo download di un background può richiedere qualche minuto)
+6. Scarica il video dalla sezione *Generated videos*
+
+### Aggiungere un tema personalizzato
+
+Se non trovi il gioco/tema che vuoi:
+
+1. Scendi fino alla sezione **🎨 Custom backgrounds**
+2. Scegli il tipo (Video o Audio)
+3. Scrivi un nome tema (es. `elden-ring`)
+4. Scrivi una query di ricerca (es. `elden ring gameplay no copyright`)
+5. Clicca **➕ Add & Download** — il sistema cercherà e scaricherà automaticamente da YouTube
+6. Oppure clicca **🔍 Preview search** per vedere i risultati prima di scaricare
+
+### Inserire la API Key Pexels dalla UI
+
+Vai nella sezione **⚙️ Settings** in fondo alla pagina, incolla la tua Pexels API key e clicca **Save**. La key verrà salvata in `config.toml` automaticamente.
+
+---
+
+## Temi disponibili
+
+### Video
+`minecraft`, `minecraft-2`, `rocket-league`, `motor-gta`, `gta`, `csgo-surf`, `cluster-truck`, `multiversus`, `fall-guys`, `steep`, `trackmania`, `racing-cars`, `3d-printing`, `parkour`, `subnautica`, `satisfactory`, `zelda`, `elden-ring`, `forza`, `cod`
+
+### Audio
+`lofi`, `lofi-2`, `chill-summer`, `cinematic`, `upbeat`, `ambient`, `rain-lofi`, `jazz-lofi`, `synthwave`
+
+---
+
+## Troubleshooting
+
+| Problema | Soluzione |
+|---|---|
+| `Can't find model 'en_core_web_sm'` | `python -m spacy download en_core_web_sm` |
+| `Display is not set` / browser crash | Usa `xvfb-run -a python web_ui/app.py` |
+| Porta 5000 occupata | `lsof -ti:5000 \| xargs kill -9` poi riavvia |
+| Download YouTube lento/fallito | Aggiungi una Pexels API key per fallback |
+| Background nero con scritte | È il fallback locale (Game of Life). Il download precedente è fallito — prova un altro tema o aggiungi la Pexels key |
+
+---
+
+## Architettura
+
+```
+Web UI (Flask)  →  config.toml  →  bot main.py  →  Reddit scraper (PullPush)
+                                            ↓
+                              Background downloader (YouTube → Pexels → Fallback)
+                                            ↓
+                              Video finale (libx264 + TTS)
+```
+
+---
+
+## Crediti
+
+- Originale: [elebumm/RedditVideoMakerBot](https://github.com/elebumm/RedditVideoMakerBot) by Lewis Menelaws & TMRRW
+- Fork Web UI + no-API scraper + auto-downloader: [edoargo1996](https://github.com/edoargo1996)
+
+## Licenza
+Vedi [LICENSE](LICENSE) originale del progetto.

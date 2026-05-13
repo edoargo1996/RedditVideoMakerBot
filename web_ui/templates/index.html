@@ -190,6 +190,20 @@ pre.log {
     <h2>🎬 Generated videos</h2>
     <div id="videos-list" class="videos-grid"></div>
   </div>
+
+  <div class="card">
+    <h2>⚙️ Settings</h2>
+    <p style="color:var(--muted);font-size:.85rem;margin:0 0 12px">
+      Optional configuration. The Pexels API key gives you more reliable background video downloads.<br>
+      Get one free at <a href="https://www.pexels.com/api/" target="_blank" style="color:var(--accent2)">pexels.com/api</a>.
+    </p>
+    <label for="pexels-key">Pexels API key</label>
+    <input type="text" id="pexels-key" placeholder="Paste your Pexels API key here" style="font-family:monospace;">
+    <div style="margin-top:12px;">
+      <button class="btn" style="padding:8px 18px; font-size:.9rem; background:linear-gradient(135deg,#555,#777);" onclick="saveConfig()">💾 Save</button>
+      <span id="config-status" style="margin-left:10px; font-size:.85rem;"></span>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -333,8 +347,35 @@ async function previewSearch() {
   }
 }
 
+async function loadConfig() {
+  try {
+    const res = await fetch('/config');
+    const data = await res.json();
+    if (data.pexels_api_key) {
+      document.getElementById('pexels-key').value = data.pexels_api_key;
+    }
+  } catch (e) { console.log('config load skipped'); }
+}
+
+async function saveConfig() {
+  const key = document.getElementById('pexels-key').value.trim();
+  const status = document.getElementById('config-status');
+  status.innerHTML = '<span style="color:#00e5ff">⏳ Saving...</span>';
+  const res = await fetch('/config', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({pexels_api_key: key})
+  });
+  if (res.ok) {
+    status.innerHTML = '<span style="color:#4caf50">✅ Saved!</span>';
+  } else {
+    status.innerHTML = '<span style="color:#f44336">❌ Error saving</span>';
+  }
+}
+
 loadVideos();
 loadBackgrounds();
+loadConfig();
 </script>
 </body>
 </html>
