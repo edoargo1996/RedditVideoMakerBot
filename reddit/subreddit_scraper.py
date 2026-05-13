@@ -193,8 +193,14 @@ class FakeSearchResults:
 
     def __iter__(self):
         url = "https://api.pullpush.io/reddit/search/submission/"
-        session = _get_session()
-        resp = session.get(url, params=self._params(), timeout=30)
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
+            ),
+        }
+        resp = requests.get(url, params=self._params(), headers=headers, timeout=30)
         try:
             resp.raise_for_status()
             payload = resp.json()
