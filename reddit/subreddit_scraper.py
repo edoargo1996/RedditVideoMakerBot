@@ -85,6 +85,7 @@ class FakeSubmission:
         self.selftext = data.get("selftext", "")
         self.stickied = data.get("stickied", False)
         self.is_self = data.get("is_self", True)
+        self.subreddit = data.get("subreddit", "")
         author = data.get("author")
         self.author = FakeAuthor(author) if author else None
         self.comments = comments or []
@@ -178,16 +179,17 @@ class FakeSearchResults:
         }
 
         now = int(time.time())
+        self._after_ts = None
         if self.time_filter == "hour":
-            params["after"] = now - 3600
+            self._after_ts = now - 3600
         elif self.time_filter == "day":
-            params["after"] = now - 86400
+            self._after_ts = now - 86400
         elif self.time_filter == "week":
-            params["after"] = now - 604800
+            self._after_ts = now - 604800
         elif self.time_filter == "month":
-            params["after"] = now - 2592000
+            self._after_ts = now - 2592000
         elif self.time_filter == "year":
-            params["after"] = now - 31536000
+            self._after_ts = now - 31536000
 
         return params
 
@@ -200,14 +202,27 @@ class FakeSearchResults:
                 "Chrome/124.0.0.0 Safari/537.36"
             ),
         }
-        resp = requests.get(url, params=self._params(), headers=headers, timeout=30)
+        params = self._params()
+        resp = requests.get(url, params=params, headers=headers, timeout=30)
         try:
             resp.raise_for_status()
             payload = resp.json()
         except Exception as exc:
             raise RuntimeError(f"PullPush search failed: {exc}") from exc
 
-        for post in payload.get("data", []):
+        posts = payload.get("data", [])
+
+        # Client-side time filtering — PullPush "after" param is unreliable
+        if self._after_ts:
+            filtered = [p for p in posts if p.get("created_utc", 0) >= self._after_ts]
+            if filtered:
+                posts = filtered
+            else:
+                # No results in the time window; return unfiltered so user gets *something*
+                # and can see they're stale. We'll log this via the caller.
+                pass
+
+        for post in posts:
             # PullPush returns raw API fields; author is a string
             if isinstance(post.get("author"), str):
                 post["author"] = post["author"]

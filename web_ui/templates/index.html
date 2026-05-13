@@ -6,68 +6,135 @@
 <title>RedditVideoMakerBot — Web UI</title>
 <style>
 :root {
-  --bg: #0f1115;
-  --panel: #16191f;
+  --bg: #0b0d12;
+  --panel: #14171f;
   --accent: #ff5722;
   --accent2: #00e5ff;
-  --text: #e0e0e0;
-  --muted: #888;
-  --border: #2a2e37;
-  --radius: 12px;
+  --text: #e8eaed;
+  --muted: #8b92a8;
+  --border: #252a36;
+  --radius: 14px;
   --font: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 * { box-sizing: border-box; }
 body {
   margin: 0; font-family: var(--font); background: var(--bg); color: var(--text);
-  display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 40px 20px;
+  display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 32px 16px;
 }
-.container { width: 100%; max-width: 720px; }
-header { text-align: center; margin-bottom: 30px; }
-header h1 { margin: 0; font-size: 2rem; letter-spacing: -1px; }
-header p { color: var(--muted); margin: 6px 0 0; }
+.container { width: 100%; max-width: 800px; }
+
+/* Header */
+header { text-align: center; margin-bottom: 28px; }
+header h1 { margin: 0; font-size: 1.9rem; letter-spacing: -0.5px; }
+header p { color: var(--muted); margin: 8px 0 0; font-size: .95rem; }
+
+/* Step indicator */
+.step-bar {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; padding: 0 10px;
+}
+.step {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; position: relative;
+}
+.step .circle {
+  width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .9rem; border: 2px solid var(--border); background: var(--panel); color: var(--muted);
+  transition: all .3s; z-index: 2;
+}
+.step.active .circle { border-color: var(--accent2); color: var(--accent2); box-shadow: 0 0 0 4px rgba(0,229,255,.15); }
+.step.done .circle { border-color: var(--accent); background: var(--accent); color: #fff; }
+.step .label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.step.active .label { color: var(--accent2); }
+.step.done .label { color: var(--accent); }
+.step-line {
+  position: absolute; top: 18px; left: 50%; width: 100%; height: 2px; background: var(--border); z-index: 1;
+}
+.step:last-child .step-line { display: none; }
+.step.done .step-line { background: var(--accent); }
+
+/* Cards */
 .card {
   background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 24px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(0,0,0,.35);
+  padding: 22px; margin-bottom: 18px; box-shadow: 0 8px 28px rgba(0,0,0,.35);
 }
-.card h2 { margin: 0 0 16px; font-size: 1.15rem; color: var(--accent2); }
-.row { display: flex; gap: 12px; flex-wrap: wrap; }
-.row > * { flex: 1 1 200px; }
-label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 6px; margin-top: 14px; }
+.card h2 { margin: 0 0 14px; font-size: 1.1rem; color: var(--accent2); display: flex; align-items: center; gap: 8px; }
+.card h2 .num { font-size: .85rem; opacity: .7; }
+
+.row { display: flex; gap: 14px; flex-wrap: wrap; }
+.row > * { flex: 1 1 220px; }
+label { display: block; font-size: .82rem; color: var(--muted); margin-bottom: 6px; margin-top: 14px; }
+label .hint { font-size: .75rem; color: #5a6070; font-weight: 400; margin-left: 4px; }
 input[type="text"], select {
   width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
-  background: #0f1115; color: var(--text); font-size: .95rem; outline: none; transition: border .2s;
+  background: #0b0d12; color: var(--text); font-size: .95rem; outline: none; transition: border .2s;
 }
 input[type="text"]:focus, select:focus { border-color: var(--accent2); }
-.radio-group { display: flex; gap: 10px; margin-top: 8px; }
-.radio-group label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text); font-size: .95rem; margin: 0; }
+
+.radio-group { display: flex; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
+.radio-group label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text); font-size: .92rem; margin: 0; }
 .radio-group input { accent-color: var(--accent); }
+
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 12px 28px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600;
+  padding: 12px 26px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600;
   color: #fff; background: linear-gradient(135deg, var(--accent), #ff8a50); box-shadow: 0 4px 14px rgba(255,87,34,.35);
   transition: transform .1s, box-shadow .2s;
 }
 .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,87,34,.45); }
-.btn:disabled { opacity: .6; cursor: not-allowed; transform: none; box-shadow: none; }
-.status {
-  margin-top: 16px; padding: 14px; border-radius: 8px; font-size: .95rem; display: none;
+.btn:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn.secondary { background: linear-gradient(135deg, #3a3f4b, #4a5060); box-shadow: none; }
+.btn.secondary:hover { box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+.btn.small { padding: 8px 16px; font-size: .85rem; }
+
+.status-box {
+  margin-top: 16px; padding: 14px; border-radius: 10px; font-size: .95rem; display: none;
 }
-.status.running { display: block; background: #1a2b3a; border: 1px solid #00e5ff; color: #00e5ff; }
-.status.ok     { display: block; background: #1a3a2a; border: 1px solid #4caf50; color: #4caf50; }
-.status.err    { display: block; background: #3a1a1a; border: 1px solid #f44336; color: #f44336; }
+.status-box.running { display: block; background: #122231; border: 1px solid #00e5ff; color: #00e5ff; }
+.status-box.ok     { display: block; background: #152a1e; border: 1px solid #4caf50; color: #4caf50; }
+.status-box.warn   { display: block; background: #2a2515; border: 1px solid #ffc107; color: #ffc107; }
+.status-box.err    { display: block; background: #2a1515; border: 1px solid #f44336; color: #f44336; }
+
 pre.log {
-  background: #0b0d11; border: 1px solid var(--border); border-radius: 8px; padding: 12px;
-  max-height: 320px; overflow: auto; font-size: .82rem; line-height: 1.45; color: #c0c5ce;
+  background: #080a0f; border: 1px solid var(--border); border-radius: 8px; padding: 12px;
+  max-height: 360px; overflow: auto; font-size: .8rem; line-height: 1.5; color: #b0b8c8;
   margin-top: 12px; white-space: pre-wrap; word-break: break-word;
 }
-.videos-grid { display: grid; gap: 12px; }
+pre.log .err { color: #ff6b6b; }
+pre.log .ok  { color: #4caf50; }
+pre.log .info { color: #64b5f6; }
+
+/* Thread preview */
+.thread-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.thread-card {
+  background: #0b0d12; border: 2px solid var(--border); border-radius: 10px; padding: 12px 14px;
+  cursor: pointer; transition: border-color .2s, background .2s; display: flex; flex-direction: column; gap: 6px;
+}
+.thread-card:hover { border-color: #3a4050; }
+.thread-card.selected { border-color: var(--accent2); background: #0d1a20; }
+.thread-card .title { font-weight: 600; font-size: .95rem; line-height: 1.35; }
+.thread-card .meta { font-size: .78rem; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; }
+.thread-card .meta span { display: inline-flex; align-items: center; gap: 3px; }
+.thread-card .preview-text { font-size: .8rem; color: #6a7080; line-height: 1.4; margin-top: 2px; }
+
+/* Video list */
+.videos-grid { display: grid; gap: 10px; }
 .video-item {
   display: flex; align-items: center; justify-content: space-between;
-  background: #0f1115; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px;
+  background: #0b0d12; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px;
 }
 .video-item a { color: var(--accent2); text-decoration: none; font-weight: 500; }
 .video-item a:hover { text-decoration: underline; }
 .video-item span { color: var(--muted); font-size: .8rem; }
+
+/* Generation steps */
+.gen-steps { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.gen-step {
+  flex: 1 1 140px; background: #0b0d12; border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px; text-align: center; font-size: .8rem; color: var(--muted); transition: all .3s;
+}
+.gen-step.active { border-color: var(--accent2); color: var(--accent2); background: #0d1a20; }
+.gen-step.done { border-color: var(--accent); color: var(--accent); background: #1a1510; }
+.gen-step .emoji { font-size: 1.1rem; display: block; margin-bottom: 4px; }
+
 .spinner { width: 18px; height: 18px; border: 3px solid rgba(255,255,255,.2); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
@@ -76,81 +143,157 @@ pre.log {
 <div class="container">
   <header>
     <h1>🎬 RedditVideoMakerBot</h1>
-    <p>Generate Reddit narrative videos from your browser — no API keys needed.</p>
+    <p>Generate narrative Reddit videos from your browser — no Reddit API key needed.</p>
   </header>
 
+  <!-- Step indicator -->
+  <div class="step-bar">
+    <div class="step active" id="step-ind-1">
+      <div class="circle">1</div>
+      <div class="step-line"></div>
+      <div class="label">Find</div>
+    </div>
+    <div class="step" id="step-ind-2">
+      <div class="circle">2</div>
+      <div class="step-line"></div>
+      <div class="label">Configure</div>
+    </div>
+    <div class="step" id="step-ind-3">
+      <div class="circle">3</div>
+      <div class="step-line"></div>
+      <div class="label">Generate</div>
+    </div>
+    <div class="step" id="step-ind-4">
+      <div class="circle">4</div>
+      <div class="label">Download</div>
+    </div>
+  </div>
+
+  <!-- STEP 1: Find content -->
   <div class="card">
-    <h2>1. Pick content source</h2>
+    <h2><span class="num">1.</span> 🔍 Find Reddit content</h2>
+    <p style="color:var(--muted);font-size:.85rem;margin:-8px 0 14px">
+      Search all of Reddit by keyword, or browse a specific subreddit.
+    </p>
+
     <div class="radio-group">
-      <label><input type="radio" name="mode" value="search" checked onchange="toggleMode()"> Search Reddit</label>
-      <label><input type="radio" name="mode" value="subreddit" onchange="toggleMode()"> Subreddit only</label>
+      <label><input type="radio" name="mode" value="search" checked onchange="toggleMode()"> 🔎 Search Reddit</label>
+      <label><input type="radio" name="mode" value="subreddit" onchange="toggleMode()"> 📁 Subreddit only</label>
     </div>
 
     <div id="search-fields">
-      <label for="query">Search query</label>
-      <input type="text" id="query" placeholder="e.g. 3D printing news, racing cars, new tech..." value="3D printing">
+      <label for="query">
+        Search query <span class="hint">— what topic should the video be about?</span>
+      </label>
+      <input type="text" id="query" placeholder="e.g. 3D printing, relationship advice, funny stories..." value="3D printing">
       <div class="row">
         <div>
-          <label for="sort">Sort by</label>
+          <label for="sort">Sort by <span class="hint">— how to rank results</span></label>
           <select id="sort">
             <option value="hot" selected>Hot</option>
             <option value="relevance">Relevance</option>
             <option value="top">Top</option>
             <option value="new">New</option>
-            <option value="comments">Comments</option>
+            <option value="comments">Most commented</option>
           </select>
         </div>
         <div>
-          <label for="time">Time filter</label>
+          <label for="time">Time filter <span class="hint">— how recent?</span></label>
           <select id="time">
-            <option value="all">All time</option>
-            <option value="year">Year</option>
-            <option value="month">Month</option>
-            <option value="week" selected>Week</option>
-            <option value="day">Day</option>
-            <option value="hour">Hour</option>
+            <option value="all" selected>All time</option>
+            <option value="year">Past year</option>
+            <option value="month">Past month</option>
+            <option value="week">Past week</option>
+            <option value="day">Past 24h</option>
+            <option value="hour">Past hour</option>
           </select>
         </div>
       </div>
     </div>
 
     <div id="subreddit-fields" style="display:none">
-      <label for="subreddit">Subreddit name</label>
+      <label for="subreddit">Subreddit name <span class="hint">— e.g. AskReddit, funny, technology</span></label>
       <input type="text" id="subreddit" placeholder="e.g. AskReddit" value="AskReddit">
+    </div>
+
+    <div style="margin-top:18px">
+      <button id="search-btn" class="btn small secondary" onclick="doPreview()">
+        <span id="search-btn-text">🔍 Search threads</span>
+      </button>
+      <span id="search-status" style="margin-left:10px; font-size:.85rem;"></span>
+    </div>
+
+    <!-- Thread preview -->
+    <div id="thread-preview-box" style="display:none">
+      <label style="margin-top:18px">📋 Threads found — click one to select it, or leave none selected for auto-pick</label>
+      <div id="thread-list" class="thread-list"></div>
+      <div id="thread-msg" style="margin-top:8px; font-size:.85rem; color:var(--muted)"></div>
     </div>
   </div>
 
+  <!-- STEP 2: Configure video -->
   <div class="card">
-    <h2>2. Choose background theme</h2>
+    <h2><span class="num">2.</span> 🎨 Configure your video</h2>
+    <p style="color:var(--muted);font-size:.85rem;margin:-8px 0 14px">
+      Pick the look & feel. Backgrounds are downloaded automatically if missing.
+    </p>
+
     <div class="row">
       <div>
-        <label for="video">Background video</label>
+        <label for="video">Background video <span class="hint">— gameplay footage behind the text</span></label>
         <select id="video">
           {% for v in videos %}<option value="{{ v }}">{{ v.replace('-',' ').title() }}</option>{% endfor %}
         </select>
       </div>
       <div>
-        <label for="audio">Background audio</label>
+        <label for="audio">Background audio <span class="hint">— music or ambient sound</span></label>
         <select id="audio">
           {% for a in audios %}<option value="{{ a }}">{{ a.replace('-',' ').title() }}</option>{% endfor %}
         </select>
       </div>
     </div>
-    <label for="voice">TTS voice</label>
+    <label for="voice">Voice <span class="hint">— text-to-speech engine</span></label>
     <select id="voice">
-      <option value="googletranslate" selected>Google Translate (free)</option>
+      <option value="googletranslate" selected>Google Translate (free, no key)</option>
       <option value="tiktok">TikTok</option>
       <option value="elevenlabs">ElevenLabs</option>
       <option value="OpenAI">OpenAI</option>
     </select>
     <div class="radio-group" style="margin-top:14px">
-      <label><input type="checkbox" id="storymode"> Story mode (title + body only, no comments)</label>
+      <label><input type="checkbox" id="storymode"> 📖 Story mode <span class="hint">— read title + body text only, skip comments</span></label>
     </div>
   </div>
 
+  <!-- STEP 3: Generate -->
+  <div class="card" style="text-align:center">
+    <button id="go-btn" class="btn" onclick="startGeneration()">
+      <span id="btn-text">🚀 Generate Video</span>
+    </button>
+
+    <div id="status" class="status-box"></div>
+
+    <!-- Generation step indicator -->
+    <div id="gen-steps" class="gen-steps" style="display:none">
+      <div class="gen-step" id="gs-search"><span class="emoji">🔍</span>Find thread</div>
+      <div class="gen-step" id="gs-tts"><span class="emoji">🎙️</span>Text to speech</div>
+      <div class="gen-step" id="gs-screenshots"><span class="emoji">📸</span>Screenshots</div>
+      <div class="gen-step" id="gs-bg"><span class="emoji">🎬</span>Background</div>
+      <div class="gen-step" id="gs-render"><span class="emoji">✂️</span>Render video</div>
+    </div>
+
+    <pre id="log" class="log" style="display:none"></pre>
+  </div>
+
+  <!-- STEP 4: Generated videos -->
+  <div class="card">
+    <h2><span class="num">4.</span> 🎬 Generated videos</h2>
+    <div id="videos-list" class="videos-grid"></div>
+  </div>
+
+  <!-- Custom backgrounds -->
   <div class="card">
     <h2>🎨 Custom backgrounds</h2>
-    <p style="color:var(--muted);font-size:.85rem;margin:0 0 12px">
+    <p style="color:var(--muted);font-size:.85rem;margin:-8px 0 14px">
       Can't find a theme? Add your own — the bot will search YouTube and download it automatically.
     </p>
     <div class="row">
@@ -170,54 +313,80 @@ pre.log {
     <input type="text" id="custom-query" placeholder="e.g. elden ring gameplay no copyright">
     <label for="custom-url">Direct YouTube URL (optional)</label>
     <input type="text" id="custom-url" placeholder="https://www.youtube.com/watch?v=...">
-    <div style="margin-top:12px; display:flex; gap:10px;">
-      <button class="btn" style="padding:8px 18px; font-size:.9rem;" onclick="addCustomBackground()">➕ Add & Download</button>
-      <button class="btn" style="padding:8px 18px; font-size:.9rem; background:linear-gradient(135deg,#555,#777);" onclick="previewSearch()">🔍 Preview search</button>
+    <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn small secondary" onclick="addCustomBackground()">➕ Add & Download</button>
+      <button class="btn small secondary" onclick="previewSearch()">🔍 Preview search</button>
     </div>
     <div id="custom-status" style="margin-top:10px; font-size:.85rem;"></div>
     <div id="search-preview" style="margin-top:10px; font-size:.8rem; color:var(--muted);"></div>
   </div>
 
-  <div class="card" style="text-align:center">
-    <button id="go-btn" class="btn" onclick="startGeneration()">
-      <span id="btn-text">🚀 Generate Video</span>
-    </button>
-    <div id="status" class="status"></div>
-    <pre id="log" class="log" style="display:none"></pre>
-  </div>
-
-  <div class="card">
-    <h2>🎬 Generated videos</h2>
-    <div id="videos-list" class="videos-grid"></div>
-  </div>
-
+  <!-- Settings -->
   <div class="card">
     <h2>⚙️ Settings</h2>
-    <p style="color:var(--muted);font-size:.85rem;margin:0 0 12px">
+    <p style="color:var(--muted);font-size:.85rem;margin:-8px 0 14px">
       Optional configuration. The Pexels API key gives you more reliable background video downloads.<br>
       Get one free at <a href="https://www.pexels.com/api/" target="_blank" style="color:var(--accent2)">pexels.com/api</a>.
     </p>
     <label for="pexels-key">Pexels API key</label>
     <input type="text" id="pexels-key" placeholder="Paste your Pexels API key here" style="font-family:monospace;">
     <div style="margin-top:12px;">
-      <button class="btn" style="padding:8px 18px; font-size:.9rem; background:linear-gradient(135deg,#555,#777);" onclick="saveConfig()">💾 Save</button>
+      <button class="btn small secondary" onclick="saveConfig()">💾 Save</button>
       <span id="config-status" style="margin-left:10px; font-size:.85rem;"></span>
     </div>
   </div>
 </div>
 
 <script>
+let chosenThreadId = '';
+let pollInterval;
+
 function toggleMode() {
   const mode = document.querySelector('input[name="mode"]:checked').value;
   document.getElementById('search-fields').style.display = mode === 'search' ? 'block' : 'none';
   document.getElementById('subreddit-fields').style.display = mode === 'subreddit' ? 'block' : 'none';
 }
 
+function setStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('step-ind-' + i);
+    el.classList.remove('active', 'done');
+    if (i < n) el.classList.add('done');
+    else if (i === n) el.classList.add('active');
+  }
+}
+
+function setGenStep(name) {
+  const steps = ['search','tts','screenshots','bg','render'];
+  let reached = false;
+  for (const s of steps) {
+    const el = document.getElementById('gs-' + s);
+    el.classList.remove('active', 'done');
+    if (s === name) { el.classList.add('active'); reached = true; }
+    else if (!reached) el.classList.add('done');
+  }
+}
+
+function setStatus(cls, html) {
+  const el = document.getElementById('status');
+  el.className = 'status-box ' + cls;
+  el.innerHTML = html;
+  el.style.display = 'block';
+}
+
+function formatLog(text) {
+  // Simple syntax highlighting for log text
+  return text
+    .replace(/Error:|ERROR|Failed|failed/g, m => `<span class="err">${m}</span>`)
+    .replace(/Successfully|success|Done|Finished|✅/g, m => `<span class="ok">${m}</span>`)
+    .replace(/Getting|Searching|Downloading|Rendering|Making/g, m => `<span class="info">${m}</span>`);
+}
+
 async function loadVideos() {
   const res = await fetch('/videos');
   const data = await res.json();
   const box = document.getElementById('videos-list');
-  if (!data.length) { box.innerHTML = '<p style="color:#888">No videos yet.</p>'; return; }
+  if (!data.length) { box.innerHTML = '<p style="color:#888">No videos yet. Generate one above!</p>'; return; }
   box.innerHTML = data.map(v => `
     <div class="video-item">
       <a href="/download/${v.path}" target="_blank">${v.name}</a>
@@ -225,12 +394,83 @@ async function loadVideos() {
     </div>`).join('');
 }
 
-let pollInterval;
-function setStatus(cls, html) {
-  const el = document.getElementById('status');
-  el.className = 'status ' + cls;
-  el.innerHTML = html;
-  el.style.display = 'block';
+async function doPreview() {
+  const btn = document.getElementById('search-btn');
+  const btnText = document.getElementById('search-btn-text');
+  const status = document.getElementById('search-status');
+  const box = document.getElementById('thread-preview-box');
+  const list = document.getElementById('thread-list');
+  const msg = document.getElementById('thread-msg');
+
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  const payload = {
+    mode,
+    query: document.getElementById('query').value,
+    subreddit: document.getElementById('subreddit').value,
+    sort: document.getElementById('sort').value,
+    time: document.getElementById('time').value,
+    storymode: document.getElementById('storymode').checked,
+  };
+
+  btn.disabled = true;
+  btnText.innerHTML = '<span class="spinner"></span> Searching...';
+  status.textContent = '';
+  box.style.display = 'none';
+  chosenThreadId = '';
+
+  try {
+    const res = await fetch('/preview', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    box.style.display = 'block';
+
+    if (data.error) {
+      list.innerHTML = '';
+      msg.innerHTML = `<span style="color:#f44336">❌ ${data.error}</span>`;
+      return;
+    }
+
+    if (!data.threads || !data.threads.length) {
+      list.innerHTML = '';
+      msg.innerHTML = `<span style="color:#ffc107">⚠️ ${data.message || 'No threads found.'}</span>`;
+      return;
+    }
+
+    msg.innerHTML = `<span style="color:#4caf50">✅ Found ${data.total_found} thread(s), ${data.total_valid} valid.</span>`;
+    list.innerHTML = data.threads.map((t, i) => `
+      <div class="thread-card ${i===0 && !chosenThreadId ? 'selected' : ''}" data-id="${t.id}" onclick="selectThread(this)">
+        <div class="title">${escapeHtml(t.title)}</div>
+        <div class="meta">
+          <span>⬆️ ${t.score}</span>
+          <span>💬 ${t.num_comments}</span>
+          <span>👤 ${escapeHtml(t.author)}</span>
+          <span>📁 r/${escapeHtml(t.subreddit || 'unknown')}</span>
+          ${t.over_18 ? '<span style="color:#f44336">🔞 NSFW</span>' : ''}
+        </div>
+        ${t.selftext_preview ? `<div class="preview-text">${escapeHtml(t.selftext_preview)}</div>` : ''}
+      </div>
+    `).join('');
+
+    // Auto-select first
+    if (data.threads.length) chosenThreadId = data.threads[0].id;
+  } catch (e) {
+    msg.innerHTML = `<span style="color:#f44336">❌ Network error: ${e.message}</span>`;
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = '🔍 Search threads';
+  }
+}
+
+function selectThread(el) {
+  document.querySelectorAll('.thread-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  chosenThreadId = el.dataset.id;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\''':'&#39;'}[m]));
 }
 
 async function checkStatus() {
@@ -238,26 +478,41 @@ async function checkStatus() {
   const s = await res.json();
   const btn = document.getElementById('go-btn');
   const log = document.getElementById('log');
+  const stepsBox = document.getElementById('gen-steps');
 
   if (s.running) {
     setStatus('running', '<span class="spinner"></span> Generating video… please wait.');
     btn.disabled = true;
-    document.getElementById('btn-text').textContent = 'Generating...';
-    if (s.log) { log.style.display='block'; log.textContent = s.log; log.scrollTop = log.scrollHeight; }
+    document.getElementById('btn-text').textContent = 'Generating…';
+    stepsBox.style.display = 'flex';
+    if (s.log) {
+      log.style.display = 'block';
+      log.innerHTML = formatLog(s.log);
+      log.scrollTop = log.scrollHeight;
+      // Infer current step from log keywords
+      const txt = s.log.toLowerCase();
+      if (txt.includes('render') || txt.includes('final video')) setGenStep('render');
+      else if (txt.includes('chop') || txt.includes('background')) setGenStep('bg');
+      else if (txt.includes('screenshot')) setGenStep('screenshots');
+      else if (txt.includes('tts') || txt.includes('voice') || txt.includes('mp3')) setGenStep('tts');
+      else setGenStep('search');
+    }
   } else if (s.finished_at) {
     clearInterval(pollInterval);
     btn.disabled = false;
     document.getElementById('btn-text').textContent = '🚀 Generate Video';
+    stepsBox.style.display = 'none';
     if (s.error) {
       setStatus('err', '❌ Error: ' + s.error);
-      if (s.log) { log.style.display='block'; log.textContent = s.log; }
+      if (s.log) { log.style.display='block'; log.innerHTML = formatLog(s.log); }
     } else if (s.result) {
-      setStatus('ok', '✅ ' + s.result + (s.video_path ? `<br><a href="/download/${s.video_path}" style="color:#4caf50;text-decoration:underline">Download video</a>` : ''));
-      if (s.log) { log.style.display='block'; log.textContent = s.log; }
+      setStatus('ok', '✅ ' + s.result + (s.video_path ? `<br><a href="/download/${s.video_path}" style="color:#4caf50;text-decoration:underline;font-weight:600">⬇️ Download video</a>` : ''));
+      if (s.log) { log.style.display='block'; log.innerHTML = formatLog(s.log); }
       loadVideos();
+      setStep(4);
     } else {
       setStatus('err', '❌ Something went wrong (no result or error recorded).');
-      if (s.log) { log.style.display='block'; log.textContent = s.log; }
+      if (s.log) { log.style.display='block'; log.innerHTML = formatLog(s.log); }
     }
   }
 }
@@ -265,7 +520,7 @@ async function checkStatus() {
 async function startGeneration() {
   const mode = document.querySelector('input[name="mode"]:checked').value;
   const payload = {
-    mode: mode,
+    mode,
     query: document.getElementById('query').value,
     subreddit: document.getElementById('subreddit').value,
     sort: document.getElementById('sort').value,
@@ -274,6 +529,7 @@ async function startGeneration() {
     audio: document.getElementById('audio').value,
     voice: document.getElementById('voice').value,
     storymode: document.getElementById('storymode').checked,
+    chosen_thread_id: chosenThreadId,
   };
 
   const res = await fetch('/generate', {
@@ -288,7 +544,10 @@ async function startGeneration() {
   document.getElementById('log').textContent = '';
   setStatus('running', '<span class="spinner"></span> Generation started!');
   document.getElementById('go-btn').disabled = true;
-  document.getElementById('btn-text').textContent = 'Generating...';
+  document.getElementById('btn-text').textContent = 'Generating…';
+  document.getElementById('gen-steps').style.display = 'flex';
+  setGenStep('search');
+  setStep(3);
   pollInterval = setInterval(checkStatus, 2500);
 }
 

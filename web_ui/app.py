@@ -6,7 +6,7 @@ import sys
 import threading
 import traceback
 import re
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, redirect_stderr
 from datetime import datetime
 from io import StringIO
 from pathlib import Path
@@ -115,6 +115,87 @@ def list_videos():
     return jsonify(_list_generated_videos())
 
 
+@app.route("/preview", methods=["POST"])
+def preview():
+    """Search Reddit and return candidate threads for preview."""
+    data = request.get_json(force=True) or {}
+    mode = data.get("mode", "search")
+    query = data.get("query", "").strip()
+    subreddit_name = data.get("subreddit", "").strip()
+    sort = data.get("sort", "hot")
+    time_filter = data.get("time", "all")
+    limit = int(data.get("limit", 25))
+    storymode = data.get("storymode", False)
+
+    from reddit.subreddit_scraper import FakeReddit
+
+    reddit = FakeReddit()
+    threads = []
+
+    if mode == "search" and query:
+        threads = list(reddit.search(query, sort=sort, time_filter=time_filter, limit=limit))
+    elif subreddit_name:
+        sub = reddit.subreddit(subreddit_name)
+        threads = list(sub.hot(limit=limit))
+    else:
+        return jsonify({"error": "Missing query or subreddit"}), 400
+
+    if not threads:
+        return jsonify({"threads": [], "message": "No threads found. Try broadening your search or changing the time filter."})
+
+    # Apply filters (mirror utils/subreddit logic without side effects)
+    blocked_raw = settings.config["reddit"]["thread"].get("blocked_words", "")
+    blocked = [w.strip().lower() for w in blocked_raw.split(",") if w.strip()]
+    min_comments = int(settings.config["reddit"]["thread"].get("min_comments", 0))
+    allow_nsfw = settings.config["settings"].get("allow_nsfw", False)
+    max_post_len = settings.config["settings"].get("storymode_max_length", 2000)
+
+    candidates = []
+    for t in threads:
+        # Skip NSFW
+        if t.over_18 and not allow_nsfw:
+            continue
+        # Skip stickied
+        if t.stickied:
+            continue
+        # Skip blocked words
+        text = (t.title or "") + " " + (t.selftext or "")
+        if any(w in text.lower() for w in blocked):
+            continue
+        # Skip low comments (unless storymode)
+        if t.num_comments <= min_comments and not storymode:
+            continue
+        # Storymode text length check
+        if storymode:
+            if not t.selftext:
+                continue
+            if len(t.selftext) > max_post_len:
+                continue
+            if len(t.selftext) < 30:
+                continue
+            if not t.is_self:
+                continue
+        candidates.append({
+            "id": t.id,
+            "title": t.title,
+            "score": t.score,
+            "num_comments": t.num_comments,
+            "subreddit": getattr(t, 'subreddit', ''),
+            "permalink": t.permalink,
+            "author": str(t.author) if t.author else "[deleted]",
+            "over_18": t.over_18,
+            "is_self": t.is_self,
+            "selftext_preview": (t.selftext or "")[:200] + "..." if len(t.selftext or "") > 200 else (t.selftext or ""),
+        })
+
+    return jsonify({
+        "threads": candidates[:10],
+        "total_found": len(threads),
+        "total_valid": len(candidates),
+        "message": None if candidates else "Threads were found but all were filtered (NSFW, stickied, too few comments, blocked words, or already used). Try changing filters."
+    })
+
+
 @app.route("/generate", methods=["POST"])
 def generate():
     global generation
@@ -135,6 +216,13 @@ def generate():
     else:
         cfg["reddit"]["thread"]["search_query"] = ""
         cfg["reddit"]["thread"]["subreddit"] = data.get("subreddit", "AskReddit")
+
+    # If user picked a specific thread from preview, force that post_id
+    chosen_id = data.get("chosen_thread_id", "").strip()
+    if chosen_id:
+        cfg["reddit"]["thread"]["post_id"] = chosen_id
+    else:
+        cfg["reddit"]["thread"]["post_id"] = ""
 
     cfg["settings"]["background"]["background_video"] = data.get("video", "minecraft")
     cfg["settings"]["background"]["background_audio"] = data.get("audio", "lofi")
@@ -162,7 +250,8 @@ def generate():
     def run():
         buf = StringIO()
         try:
-            with redirect_stdout(buf):
+            # Capture both stdout and stderr so tqdm/moviepy bars don't crash
+            with redirect_stdout(buf), redirect_stderr(buf):
                 main()
             generation["log"] = buf.getvalue()
             generation["result"] = "Video generated successfully!"
